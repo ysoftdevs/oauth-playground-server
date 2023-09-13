@@ -13,7 +13,7 @@ public class ClientsRepo {
     private final Map<String, OAuthClient> clients = new HashMap<>();
 
     public ClientsRepo() {
-        register(new OAuthClient("my-public-client", null, "https://localhost:8888/oauth_success"));
+        register(new OAuthClient("my-public-client", "Example public client", null, "https://localhost:8888/oauth_success"));
     }
 
     public Optional<OAuthClient> getClient(String clientId) {

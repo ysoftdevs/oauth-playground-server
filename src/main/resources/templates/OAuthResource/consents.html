@@ -20,7 +20,7 @@
             background-color: #fff;
             padding: 20px;
             border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .login-container h2 {
@@ -70,11 +70,21 @@
 <body>
 <div class="login-container">
     <h2>Consents</h2>
-    {#if error == "invalid_credentials"}
-    <div class="error-popup" id="error-popup">Invalid credentials</div>
-    {/if}
+    <p>Hello <strong>{user.login}</strong></p>
+
+    <p>You are authorizing to <strong>{client.description}</strong>, which requests the following permissions from you:</p>
+
     <form action="" method="post">
-        <button type="submit" class="login-button">Login</button>
+        <input type="hidden" name="sessionId" value="{sessionId}">
+        <ul>
+            {#each scopes}
+            <li>
+                <label><input type="checkbox" name="scope" value="{it}" checked>{it}</label>
+            </li>
+            {/each}
+        </ul>
+
+        <button type="submit" class="login-button">Confirm</button>
     </form>
 </div>
 </body>

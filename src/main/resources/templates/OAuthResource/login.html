@@ -20,7 +20,7 @@
             background-color: #fff;
             padding: 20px;
             border-radius: 5px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .login-container h2 {
@@ -74,6 +74,7 @@
     <div class="error-popup" id="error-popup">Invalid credentials</div>
     {/if}
     <form action="" method="post">
+        <input type="hidden" name="sessionId" value="{sessionId}">
         <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" value="{loginHint}" required>
