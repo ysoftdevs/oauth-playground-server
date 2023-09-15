@@ -24,6 +24,12 @@ public class AuthParams {
     String scope;
     @RestQuery("state")
     String state;
+    @RestQuery("code_challenge_method")
+    String codeChallengeMethod;
+    @RestQuery("code_challenge")
+    String codeChallenge;
+    @RestQuery("nonce")
+    String nonce;
 
     public String getLoginHint() {
         return loginHint;
@@ -75,5 +81,29 @@ public class AuthParams {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public String getCodeChallengeMethod() {
+        return codeChallengeMethod;
+    }
+
+    public void setCodeChallengeMethod(String codeChallengeMethod) {
+        this.codeChallengeMethod = codeChallengeMethod;
+    }
+
+    public String getCodeChallenge() {
+        return codeChallenge;
+    }
+
+    public void setCodeChallenge(String codeChallenge) {
+        this.codeChallenge = codeChallenge;
+    }
+
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
     }
 }

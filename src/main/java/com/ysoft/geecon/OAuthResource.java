@@ -103,6 +103,9 @@ public class OAuthResource {
         validateClient(params);
         var session = sessionsRepo.redeemAuthorizationCode(params.getCode())
                 .orElseThrow(() -> new OAuthException("Invalid code"));
+        if (!session.validateCodeChallenge(params.getCodeVerifier())) {
+            throw new OAuthException("Invalid code verifier");
+        }
 
         String idToken = null;
 

@@ -36,4 +36,15 @@ public record AuthorizationSession(AuthParams params,
     public String scope() {
         return acceptedScopes == null ? null : String.join(" ", acceptedScopes);
     }
+
+    public boolean validateCodeChallenge(String codeVerifier) {
+        if (params.codeChallengeMethod == null) {
+            return true;
+        }
+        if (codeVerifier == null) {
+            return false;
+        }
+        return Pkce.validate(params.codeChallengeMethod, params.codeChallenge, codeVerifier);
+    }
+
 }

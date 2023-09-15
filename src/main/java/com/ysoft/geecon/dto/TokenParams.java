@@ -1,10 +1,6 @@
 package com.ysoft.geecon.dto;
 
 import jakarta.ws.rs.FormParam;
-import org.jboss.resteasy.reactive.RestQuery;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class TokenParams {
 
@@ -22,6 +18,9 @@ public class TokenParams {
 
     @FormParam("code")
     private String code;
+
+    @FormParam("code_verifier")
+    private String codeVerifier;
 
     public String getGrantType() {
         return grantType;
@@ -61,5 +60,13 @@ public class TokenParams {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public String getCodeVerifier() {
+        return codeVerifier;
+    }
+
+    public void setCodeVerifier(String codeVerifier) {
+        this.codeVerifier = codeVerifier;
     }
 }
