@@ -16,7 +16,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
 import java.util.List;
-import java.util.Optional;
 
 @Path("/auth")
 public class OAuthResource {
@@ -69,12 +68,24 @@ public class OAuthResource {
             }
         }
 
-        String authCode = sessionsRepo.finishSession(sessionId, scopes);
-        return Response.seeOther(UriBuilder.fromUri(params.getRedirectUri())
-                        .queryParam("code", authCode)
-                        .queryParam("state", params.getState())
-                        .build())
-                .build();
+        session = sessionsRepo.authorizeSession(sessionId, scopes);
+
+        var responseTypes = params.getResponseTypes();
+
+        UriBuilder uri = UriBuilder.fromUri(params.getRedirectUri())
+                .fragment("")
+                .queryParam("state", params.getState());
+
+        if (responseTypes.contains(AuthParams.ResponseType.code)) {
+            uri.queryParam("code", sessionsRepo.generateAuthorizationCode(sessionId));
+        }
+        if (responseTypes.contains(AuthParams.ResponseType.token)) {
+            uri.queryParam("access_token", session.tokens().accessToken());
+        }
+        if (responseTypes.contains(AuthParams.ResponseType.id_token)) {
+            uri.queryParam("id_token", session.tokens().idToken());
+        }
+        return Response.seeOther(uri.build()).build();
     }
 
     @POST

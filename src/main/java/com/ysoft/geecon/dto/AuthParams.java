@@ -6,6 +6,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AuthParams {
+    public List<ResponseType> getResponseTypes() {
+        return responseType == null ? List.of() : Arrays.stream(responseType.split(" "))
+                .map(ResponseType::valueOf)
+                .toList();
+    }
+
     @RestQuery("login_hint")
     String loginHint;
     @RestQuery("response_type")
@@ -31,8 +37,8 @@ public class AuthParams {
         return responseType;
     }
 
-    public void setResponseType(String responseType) {
-        this.responseType = responseType;
+    public enum ResponseType {
+        code, token, id_token
     }
 
     public String getClientId() {
