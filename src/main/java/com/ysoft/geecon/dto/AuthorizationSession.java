@@ -14,4 +14,8 @@ public record AuthorizationSession(AuthParams params, OAuthClient client, User u
     public AuthorizationSession withScopes(List<String> acceptedScopes) {
         return new AuthorizationSession(params, client,  user, acceptedScopes);
     }
+
+    public String scope() {
+        return acceptedScopes == null ? null : String.join(" ", acceptedScopes);
+    }
 }

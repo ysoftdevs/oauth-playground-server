@@ -6,14 +6,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AuthParams {
-    public enum ResponseType {
-        code
-    }
-
     @RestQuery("login_hint")
     String loginHint;
     @RestQuery("response_type")
-    ResponseType responseType;
+    String responseType;
     @RestQuery("client_id")
     String clientId;
     @RestQuery("redirect_uri")
@@ -31,11 +27,11 @@ public class AuthParams {
         this.loginHint = loginHint;
     }
 
-    public ResponseType getResponseType() {
+    public String getResponseType() {
         return responseType;
     }
 
-    public void setResponseType(ResponseType responseType) {
+    public void setResponseType(String responseType) {
         this.responseType = responseType;
     }
 

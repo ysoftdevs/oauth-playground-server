@@ -1,10 +1,9 @@
 package com.ysoft.geecon;
 
-import com.ysoft.geecon.dto.AuthParams;
-import com.ysoft.geecon.dto.OAuthClient;
-import com.ysoft.geecon.dto.User;
+import com.ysoft.geecon.dto.*;
 import com.ysoft.geecon.error.OAuthException;
 import com.ysoft.geecon.repo.ClientsRepo;
+import com.ysoft.geecon.repo.SecureRandomStrings;
 import com.ysoft.geecon.repo.SessionsRepo;
 import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.qute.CheckedTemplate;
@@ -17,6 +16,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 @Path("/auth")
 public class OAuthResource {
@@ -40,7 +40,7 @@ public class OAuthResource {
     public TemplateInstance get(AuthParams params) {
         var client = validateClient(params);
         String sessionId = sessionsRepo.newAuthorizationSession(params, client);
-        return Templates.login(params.getLoginHint(),  sessionId, "");
+        return Templates.login(params.getLoginHint(), sessionId, "");
     }
 
     @POST
@@ -75,7 +75,34 @@ public class OAuthResource {
                         .queryParam("state", params.getState())
                         .build())
                 .build();
-        }
+    }
+
+    @POST
+    @Path("/token")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public AccessTokenResponse token(TokenParams params) {
+        return switch (params.getGrantType()) {
+            case "authorization_code" -> redeemAuthorizationCode(params);
+            default -> throw new OAuthException("Unsupported grant type");
+        };
+    }
+
+    private AccessTokenResponse redeemAuthorizationCode(TokenParams params) {
+        validateClient(params);
+        var session = sessionsRepo.redeemAuthorizationCode(params.getCode())
+                .orElseThrow(() -> new OAuthException("Invalid code"));
+
+        String idToken = null;
+
+        return new AccessTokenResponse("Bearer",
+                8400,
+                SecureRandomStrings.alphanumeric(50),
+                session.scope(),
+                SecureRandomStrings.alphanumeric(50),
+                idToken
+        );
+    }
 
     private User validateUser(String username, String password) {
         return usersRepo.getUser(username)
@@ -95,6 +122,17 @@ public class OAuthResource {
         return client;
     }
 
+    private OAuthClient validateClient(TokenParams params) {
+        var client = clientsRepo.getClient(params.getClientId())
+                .orElseThrow(() -> new RuntimeException("Not a valid client"));
+        if (!client.validateRedirectUri(params.getRedirectUri())) {
+            throw new RuntimeException("Invalid redirect URI");
+        }
+        if (!client.validateSecret(params.getClientSecret())) {
+            throw new RuntimeException("Invalid secret");
+        }
+        return client;
+    }
 }
 
 

@@ -14,6 +14,7 @@ public class ClientsRepo {
 
     public ClientsRepo() {
         register(new OAuthClient("my-public-client", "Example public client", null, "https://localhost:8888/oauth_success"));
+        register(new OAuthClient("oauthdebugger", "Example public client", null, "https://oauthdebugger.com/debug"));
     }
 
     public Optional<OAuthClient> getClient(String clientId) {
