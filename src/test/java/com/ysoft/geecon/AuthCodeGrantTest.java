@@ -69,4 +69,24 @@ public class AuthCodeGrantTest {
 
         assertThat(flow.getAccessToken(), is(notNullValue()));
     }
+
+    @Test
+    public void authCodeGrantWithPkce() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
+        flow.setPkce("PnRLncOTibrwxaBmBYm4QC89u0m4mz518sk1WFKjxnc", "bbb");
+        LoginScreen loginScreen = flow.start(Map.of("scope", "scope1 scope2"));
+
+        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
+
+        Document submit = consentScreen.submit();
+        flow.parseAndValidateRedirect(submit.connection().response());
+
+        assertThat(flow.getCode(), is(notNullValue()));
+        assertThat(flow.getAccessToken(), is(nullValue()));
+        flow.exchangeCode();
+
+        assertThat(flow.getAccessToken(), is(notNullValue()));
+
+    }
 }

@@ -25,6 +25,8 @@ public class AuthorizationCodeFlow {
     private final String authUrl;
     private final OAuthClient client;
     private String state = "testStateIsNotRandom";
+    private String codeChallenge;
+    private String codeVerifier;
     private String code;
     private String accessToken;
     private String idToken;
@@ -52,6 +54,10 @@ public class AuthorizationCodeFlow {
         map.put("client_id", client.clientId());
         map.put("redirect_uri", client.redirectUri());
         map.put("state", state);
+        if (codeChallenge != null) {
+            map.put("code_challenge", codeChallenge);
+            map.put("code_challenge_method", "S256");
+        }
         return map;
     }
 
@@ -71,11 +77,17 @@ public class AuthorizationCodeFlow {
     }
 
     public AccessTokenResponse exchangeCode() {
+        Map<String, String> tokenForm = new HashMap<>();
+        tokenForm.put("grant_type", "authorization_code");
+        tokenForm.put("client_id", client.clientId());
+        tokenForm.put("redirect_uri", client.redirectUri());
+        tokenForm.put("code", code);
+        if (codeVerifier != null) {
+            tokenForm.put("code_verifier", codeVerifier);
+        }
+
         AccessTokenResponse accessTokenResponse = given()
-                .formParam("grant_type", "authorization_code")
-                .formParam("client_id", client.clientId())
-                .formParam("redirect_uri", client.redirectUri())
-                .formParam("code", code)
+                .formParams(tokenForm)
                 .when()
                 .post("/auth/token")
                 .then()
@@ -105,5 +117,10 @@ public class AuthorizationCodeFlow {
 
     public String getIdToken() {
         return idToken;
+    }
+
+    public void setPkce(String codeChallenge, String codeVerifier) {
+        this.codeChallenge = codeChallenge;
+        this.codeVerifier = codeVerifier;
     }
 }
