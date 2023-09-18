@@ -46,14 +46,6 @@ public class DeviceAuthGrantTest {
 
 
     @Test
-    public void deviceAuthGrant_invalidCode() throws IOException {
-        DeviceCodeScreen deviceCodeScreen = new DeviceCodeScreen(deviceLoginUri);
-
-        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> deviceCodeScreen.enterCode("somecode"));
-        assertThat(exception.getStatusCode(), is(404));
-    }
-
-    @Test
     public void deviceAuthGrant() throws IOException {
         DeviceAuthorizationGrantFlow flow = new DeviceAuthorizationGrantFlow(deviceUri, CLIENT);
         DeviceResponse deviceResponse = flow.start();
@@ -64,6 +56,21 @@ public class DeviceAuthGrantTest {
         ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
         consentScreen.submit();
 
+        flow.exchangeDeviceCode();
+    }
+
+    @Test
+    public void deviceAuthGrant_invalidUserCode() throws IOException {
+        DeviceCodeScreen deviceCodeScreen = new DeviceCodeScreen(deviceLoginUri);
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> deviceCodeScreen.enterCode("somecode"));
+        assertThat(exception.getStatusCode(), is(404));
+    }
+
+    @Test
+    public void deviceAuthGrant_authorizationPending() throws IOException {
+        DeviceAuthorizationGrantFlow flow = new DeviceAuthorizationGrantFlow(deviceUri, CLIENT);
+        flow.start();
         flow.exchangeDeviceCode();
     }
 }
