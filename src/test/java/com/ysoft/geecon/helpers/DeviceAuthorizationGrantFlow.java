@@ -54,4 +54,19 @@ public class DeviceAuthorizationGrantFlow {
                 .body("refresh_token", is(notNullValue()))
                 .extract().as(AccessTokenResponse.class);
     }
+
+    public String exchangeDeviceCodeError() {
+        return given()
+                .formParam("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
+                .formParam("client_id", client.clientId())
+                .formParam("device_code", deviceResponse.deviceCode())
+                .when()
+                .post("/auth/token")
+                .then()
+                .statusCode(400).extract().asString();
+//                .contentType(JSON)
+//                .body("error", is(notNullValue()))
+//                .body("error_detail", is(notNullValue()))
+//                .extract().as(OAuthException.ErrorResponse.class);
+    }
 }

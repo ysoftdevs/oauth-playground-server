@@ -71,6 +71,6 @@ public class DeviceAuthGrantTest {
     public void deviceAuthGrant_authorizationPending() throws IOException {
         DeviceAuthorizationGrantFlow flow = new DeviceAuthorizationGrantFlow(deviceUri, CLIENT);
         flow.start();
-        flow.exchangeDeviceCode();
+        System.err.println(flow.exchangeDeviceCodeError());
     }
 }
