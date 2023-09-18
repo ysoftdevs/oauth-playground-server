@@ -6,15 +6,14 @@ import com.ysoft.geecon.dto.User;
 import com.ysoft.geecon.repo.ClientsRepo;
 import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.path.xml.XmlPath;
 import jakarta.inject.Inject;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 public class DeviceAuthGrantTest {
@@ -49,22 +48,26 @@ public class DeviceAuthGrantTest {
                 .body("expires_in", is(notNullValue()))
                 .extract().body().as(DeviceResponse.class);
 
-        String sessionId = given().formParam("code", deviceResponse.userCode()).
+        String deviceLogin = given().formParam("code", deviceResponse.userCode()).
                 when().post("/auth/device-login").
                 then().statusCode(200)
-                .extract().body().xmlPath(XmlPath.CompatibilityMode.HTML)
-                .getString("html.body.div.form.input");
+                .extract().body().asString();
 
-        String body = given().
+        String sessionId = Jsoup.parse(deviceLogin).getElementsByAttributeValue("name", "sessionId").first().attr("value");
+
+        given().
                 formParam("sessionId", sessionId).
                 formParam("username", "bob").
                 formParam("password", "password").
                 when().
                 post("auth")
-                .then().statusCode(200).extract().body().asString();
+                .then().statusCode(200);
 
-        assertEquals("aaa", body);
-
+        given().
+                formParam("sessionId", sessionId).
+                when().
+                post("auth/consent")
+                .then().statusCode(200);
     }
 
 }
