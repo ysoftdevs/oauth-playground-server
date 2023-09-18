@@ -13,6 +13,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -46,6 +47,8 @@ public class OAuthResource {
     UsersRepo usersRepo;
     @Inject
     SessionsRepo sessionsRepo;
+    @Inject
+    UriInfo uriInfo;
 
     @GET
     @Produces(MediaType.TEXT_HTML)
@@ -102,7 +105,9 @@ public class OAuthResource {
         return new DeviceResponse(
                 sessionsRepo.generateAuthorizationCode(sessionId),
                 sessionsRepo.generateUserCode(sessionId),
-                "http://verificationuri/device-login",
+                uriInfo.getBaseUriBuilder()
+                        .path(OAuthResource.class)
+                        .path(OAuthResource.class, "enterDeviceCode").build(),
                 10,
                 180
         );

@@ -11,7 +11,6 @@ public class LoginScreen {
 
     public LoginScreen(Document doc) {
         this.form = doc.expectForm("form");
-        ;
     }
 
     public Document submit(String username, String password) throws IOException {

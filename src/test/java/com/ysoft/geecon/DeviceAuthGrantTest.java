@@ -3,84 +3,67 @@ package com.ysoft.geecon;
 import com.ysoft.geecon.dto.DeviceResponse;
 import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.dto.User;
+import com.ysoft.geecon.helpers.ConsentScreen;
+import com.ysoft.geecon.helpers.DeviceAuthorizationGrantFlow;
+import com.ysoft.geecon.helpers.DeviceCodeScreen;
+import com.ysoft.geecon.helpers.LoginScreen;
 import com.ysoft.geecon.repo.ClientsRepo;
 import com.ysoft.geecon.repo.UsersRepo;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.jsoup.Jsoup;
+import org.jsoup.HttpStatusException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
+import java.io.IOException;
+import java.net.URI;
+
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
 public class DeviceAuthGrantTest {
+
+    public static final OAuthClient CLIENT = new OAuthClient("deviceclient", "", null, null);
     @Inject
     ClientsRepo clientsRepo;
     @Inject
     UsersRepo usersRepo;
 
+    @TestHTTPResource("auth/device")
+    String deviceUri;
+
+    @TestHTTPResource("auth/device-login")
+    URI deviceLoginUri;
+
+    @BeforeEach
+    void beforeAll() {
+        clientsRepo.register(CLIENT);
+        usersRepo.register(new User("bob", "password"));
+    }
+
 
     @Test
-    public void deviceAuthGrant_invalidCode() {
-        given().formParam("code", "somecode").
-                when().post("/auth/device-login").
-                then().statusCode(404);
+    public void deviceAuthGrant_invalidCode() throws IOException {
+        DeviceCodeScreen deviceCodeScreen = new DeviceCodeScreen(deviceLoginUri);
+
+        HttpStatusException exception = assertThrows(HttpStatusException.class, () -> deviceCodeScreen.enterCode("somecode"));
+        assertThat(exception.getStatusCode(), is(404));
     }
 
     @Test
-    public void deviceAuthGrant() {
-        clientsRepo.register(new OAuthClient("myclient", "", null, null));
-        usersRepo.register(new User("bob", "password"));
+    public void deviceAuthGrant() throws IOException {
+        DeviceAuthorizationGrantFlow flow = new DeviceAuthorizationGrantFlow(deviceUri, CLIENT);
+        DeviceResponse deviceResponse = flow.start();
 
-        DeviceResponse deviceResponse = given().
-                formParam("client_id", "myclient").
-                when().post("/auth/device")
-                .then()
-                .statusCode(200)
-                .contentType(JSON)
-                .body("device_code", is(notNullValue()))
-                .body("user_code", is(notNullValue()))
-                .body("verification_uri", is(notNullValue()))
-                .body("interval", is(notNullValue()))
-                .body("expires_in", is(notNullValue()))
-                .extract().body().as(DeviceResponse.class);
+        DeviceCodeScreen deviceCodeScreen = new DeviceCodeScreen(deviceResponse.verificationUri());
+        LoginScreen loginScreen = deviceCodeScreen.enterCode(deviceResponse.userCode());
 
-        String deviceLogin = given().formParam("code", deviceResponse.userCode()).
-                when().post("/auth/device-login").
-                then().statusCode(200)
-                .extract().body().asString();
+        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        consentScreen.submit();
 
-        String sessionId = Jsoup.parse(deviceLogin).getElementsByAttributeValue("name", "sessionId").first().attr("value");
-
-        given().
-                formParam("sessionId", sessionId).
-                formParam("username", "bob").
-                formParam("password", "password").
-                when().
-                post("auth")
-                .then().statusCode(200);
-
-        given().
-                formParam("sessionId", sessionId).
-                when().
-                post("auth/consent")
-                .then().statusCode(200);
-
-        given().
-                formParam("grant_type", "urn:ietf:params:oauth:grant-type:device_code").
-                formParam("client_id", "myclient").
-                formParam("device_code", deviceResponse.deviceCode()).
-                when().
-                post("/auth/token")
-                .then()
-                .statusCode(200)
-                .contentType(JSON)
-                .body("token_type", is(notNullValue()))
-                .body("expires_in", is(notNullValue()))
-                .body("access_token", is(notNullValue()))
-                .body("refresh_token", is(notNullValue()));
+        flow.exchangeDeviceCode();
     }
 }
