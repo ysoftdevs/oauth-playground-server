@@ -7,7 +7,7 @@ import java.util.List;
 
 public class AuthParams {
     public List<ResponseType> getResponseTypes() {
-        return responseType == null ? List.of() : Arrays.stream(responseType.split(" "))
+        return responseType == null ? List.of(ResponseType.code) : Arrays.stream(responseType.split(" "))
                 .map(ResponseType::valueOf)
                 .toList();
     }
