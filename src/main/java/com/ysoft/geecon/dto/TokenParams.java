@@ -22,6 +22,9 @@ public class TokenParams {
     @FormParam("code_verifier")
     private String codeVerifier;
 
+    @FormParam("device_code")
+    private String deviceCode;
+
     public String getGrantType() {
         return grantType;
     }
@@ -68,5 +71,13 @@ public class TokenParams {
 
     public void setCodeVerifier(String codeVerifier) {
         this.codeVerifier = codeVerifier;
+    }
+
+    public String getDeviceCode() {
+        return deviceCode;
+    }
+
+    public void setDeviceCode(String deviceCode) {
+        this.deviceCode = deviceCode;
     }
 }

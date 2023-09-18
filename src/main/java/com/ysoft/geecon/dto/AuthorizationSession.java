@@ -3,6 +3,7 @@ package com.ysoft.geecon.dto;
 import com.ysoft.geecon.repo.SecureRandomStrings;
 
 import java.util.List;
+import java.util.Objects;
 
 public record AuthorizationSession(String sessionId,
                                    AuthParams params,
@@ -48,4 +49,7 @@ public record AuthorizationSession(String sessionId,
         return Pkce.validate(params.codeChallengeMethod, params.codeChallenge, codeVerifier);
     }
 
+    public boolean validateRedirectUri(String redirectUri) {
+        return Objects.equals(params.redirectUri, redirectUri);
+    }
 }

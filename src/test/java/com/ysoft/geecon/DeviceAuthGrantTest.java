@@ -68,6 +68,19 @@ public class DeviceAuthGrantTest {
                 when().
                 post("auth/consent")
                 .then().statusCode(200);
-    }
 
+        given().
+                formParam("grant_type", "urn:ietf:params:oauth:grant-type:device_code").
+                formParam("client_id", "myclient").
+                formParam("device_code", deviceResponse.deviceCode()).
+                when().
+                post("/auth/token")
+                .then()
+                .statusCode(200)
+                .contentType(JSON)
+                .body("token_type", is(notNullValue()))
+                .body("expires_in", is(notNullValue()))
+                .body("access_token", is(notNullValue()))
+                .body("refresh_token", is(notNullValue()));
+    }
 }
