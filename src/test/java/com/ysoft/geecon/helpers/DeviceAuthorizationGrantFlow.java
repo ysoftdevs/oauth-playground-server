@@ -3,6 +3,7 @@ package com.ysoft.geecon.helpers;
 import com.ysoft.geecon.dto.AccessTokenResponse;
 import com.ysoft.geecon.dto.DeviceResponse;
 import com.ysoft.geecon.dto.OAuthClient;
+import com.ysoft.geecon.error.OAuthException;
 
 import java.io.IOException;
 
@@ -55,7 +56,7 @@ public class DeviceAuthorizationGrantFlow {
                 .extract().as(AccessTokenResponse.class);
     }
 
-    public String exchangeDeviceCodeError() {
+    public OAuthException.ErrorResponse exchangeDeviceCodeError() {
         return given()
                 .formParam("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
                 .formParam("client_id", client.clientId())
@@ -63,10 +64,10 @@ public class DeviceAuthorizationGrantFlow {
                 .when()
                 .post("/auth/token")
                 .then()
-                .statusCode(400).extract().asString();
-//                .contentType(JSON)
-//                .body("error", is(notNullValue()))
-//                .body("error_detail", is(notNullValue()))
-//                .extract().as(OAuthException.ErrorResponse.class);
+                .statusCode(400)
+                .contentType(JSON)
+                .body("error", is(notNullValue()))
+                .body("error_description", is(notNullValue()))
+                .extract().as(OAuthException.ErrorResponse.class);
     }
 }
