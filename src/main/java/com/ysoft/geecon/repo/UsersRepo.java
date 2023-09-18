@@ -1,6 +1,5 @@
 package com.ysoft.geecon.repo;
 
-import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.dto.User;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -20,7 +19,7 @@ public class UsersRepo {
         return Optional.ofNullable(users.get(username));
     }
 
-    private void register(User user) {
+    public void register(User user) {
         users.put(user.login(), user);
     }
 }

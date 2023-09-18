@@ -21,7 +21,7 @@ public class ClientsRepo {
         return Optional.ofNullable(clients.get(clientId));
     }
 
-    private void register(OAuthClient client) {
+    public void register(OAuthClient client) {
         clients.put(client.clientId(), client);
     }
 }

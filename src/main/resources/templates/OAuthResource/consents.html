@@ -74,7 +74,7 @@
 
     <p>You are authorizing to <strong>{client.description}</strong>, which requests the following permissions from you:</p>
 
-    <form action="" method="post">
+    <form action="/auth/consent" method="post">
         <input type="hidden" name="sessionId" value="{sessionId}">
         <ul>
             {#each scopes}

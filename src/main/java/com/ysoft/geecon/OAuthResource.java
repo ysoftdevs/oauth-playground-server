@@ -14,17 +14,31 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
 @Path("/auth")
 public class OAuthResource {
 
-    @CheckedTemplate
-    public static class Templates {
-        public static native TemplateInstance login(String loginHint, String sessionId, String error);
+    @POST
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Object post(AuthParams params,
+                       @FormParam("sessionId") String sessionId,
+                       @FormParam("username") String username,
+                       @FormParam("password") String password,
+                       @FormParam("scope") List<String> scopes) {
 
-        public static native TemplateInstance consents(User user, OAuthClient client, List<String> scopes, String sessionId, String error);
+
+        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException("Invalid session"));
+        var user = validateUser(username, password);
+        if (user == null) {
+            return Templates.login(username, sessionId, "invalid_credentials");
+        } else {
+            AuthorizationSession session = sessionsRepo.assignUser(sessionId, user);
+            return Templates.consents(session.user(), session.client(), session.params().getScopes(), sessionId, "");
+        }
     }
 
     @Inject
@@ -43,49 +57,56 @@ public class OAuthResource {
     }
 
     @POST
+    @Path("consent")
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Object post(AuthParams params,
-                       @FormParam("sessionId") String sessionId,
-                       @FormParam("username") String username,
-                       @FormParam("password") String password,
-                       @FormParam("scope") List<String> scopes) {
+    public Response postConsent(
+            @FormParam("sessionId") String sessionId,
+            @FormParam("scope") List<String> scopes) {
 
+        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException("Invalid session"));
+        var session = sessionsRepo.authorizeSession(sessionId, scopes);
 
-        var session = sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException("Invalid session"));
-        if (session.user() == null) {
-            var user = validateUser(username, password);
-            if (user == null) {
-                return Templates.login(username, sessionId, "invalid_credentials");
-            } else {
-                session = sessionsRepo.assignUser(sessionId, user);
+        String redirectUri = session.params().getRedirectUri();
+        if (StringUtils.isNotBlank(redirectUri)) {
+            var responseTypes = session.params().getResponseTypes();
+
+            UriBuilder uri = UriBuilder.fromUri(redirectUri)
+                    .fragment("")
+                    .queryParam("state", session.params().getState());
+
+            if (responseTypes.contains(AuthParams.ResponseType.code)) {
+                uri.queryParam("code", sessionsRepo.generateAuthorizationCode(sessionId));
             }
-        }
-
-        if (session.acceptedScopes() == null) {
-            if (scopes == null || scopes.isEmpty()) {
-                return Templates.consents(session.user(), session.client(), session.params().getScopes(), sessionId, "");
+            if (responseTypes.contains(AuthParams.ResponseType.token)) {
+                uri.queryParam("access_token", session.tokens().accessToken());
             }
+            if (responseTypes.contains(AuthParams.ResponseType.id_token)) {
+                uri.queryParam("id_token", session.tokens().idToken());
+            }
+            return Response.seeOther(uri.build()).build();
+        } else {
+            return Response.ok(Templates.loginSuccess()).build();
         }
+    }
 
-        session = sessionsRepo.authorizeSession(sessionId, scopes);
+    @POST
+    @Path("/device")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public DeviceResponse device(DeviceParams params) {
+        var client = validateClient(params);
+        AuthParams authParams = new AuthParams();
+        authParams.setClientId(params.getClientId());
+        String sessionId = sessionsRepo.newAuthorizationSession(authParams, client);
 
-        var responseTypes = params.getResponseTypes();
-
-        UriBuilder uri = UriBuilder.fromUri(params.getRedirectUri())
-                .fragment("")
-                .queryParam("state", params.getState());
-
-        if (responseTypes.contains(AuthParams.ResponseType.code)) {
-            uri.queryParam("code", sessionsRepo.generateAuthorizationCode(sessionId));
-        }
-        if (responseTypes.contains(AuthParams.ResponseType.token)) {
-            uri.queryParam("access_token", session.tokens().accessToken());
-        }
-        if (responseTypes.contains(AuthParams.ResponseType.id_token)) {
-            uri.queryParam("id_token", session.tokens().idToken());
-        }
-        return Response.seeOther(uri.build()).build();
+        return new DeviceResponse(
+                sessionsRepo.generateAuthorizationCode(sessionId),
+                sessionsRepo.generateUserCode(sessionId),
+                "http://verificationuri/device-login",
+                10,
+                180
+        );
     }
 
     @POST
@@ -97,6 +118,28 @@ public class OAuthResource {
             case "authorization_code" -> redeemAuthorizationCode(params);
             default -> throw new OAuthException("Unsupported grant type");
         };
+    }
+
+    @GET
+    @Path("/device-login")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance enterDeviceCode() {
+        return Templates.deviceLogin("");
+    }
+
+    @POST
+    @Path("/device-login")
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response postDeviceCode(@FormParam("code") String code) {
+        return sessionsRepo.redeemUserCode(code)
+                .map(session -> Response.ok(Templates.login(session.params().getLoginHint(), session.sessionId(), "")))
+                .orElse(Response.status(404).entity(Templates.deviceLogin("invalid_code"))).build();
+    }
+
+    private OAuthClient validateClient(DeviceParams params) {
+        return clientsRepo.getClient(params.getClientId())
+                .orElseThrow(() -> new RuntimeException("Not a valid client"));
     }
 
     private AccessTokenResponse redeemAuthorizationCode(TokenParams params) {
@@ -146,6 +189,17 @@ public class OAuthResource {
             throw new RuntimeException("Invalid secret");
         }
         return client;
+    }
+
+    @CheckedTemplate
+    public static class Templates {
+        public static native TemplateInstance login(String loginHint, String sessionId, String error);
+
+        public static native TemplateInstance loginSuccess();
+
+        public static native TemplateInstance consents(User user, OAuthClient client, List<String> scopes, String sessionId, String error);
+
+        public static native TemplateInstance deviceLogin(String error);
     }
 }
 
