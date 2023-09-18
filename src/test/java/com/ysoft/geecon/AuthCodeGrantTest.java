@@ -50,10 +50,23 @@ public class AuthCodeGrantTest {
         flow.parseAndValidateRedirect(submit.connection().response());
 
         assertThat(flow.getCode(), is(notNullValue()));
-        assertThat(flow.getToken(), is(nullValue()));
+        assertThat(flow.getAccessToken(), is(nullValue()));
         flow.exchangeCode();
 
-        assertThat(flow.getToken(), is(notNullValue()));
+        assertThat(flow.getAccessToken(), is(notNullValue()));
     }
 
+    @Test
+    public void implicitGrant() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
+        LoginScreen loginScreen = flow.start(Map.of("response_type", "token", "scope", "scope1 scope2"));
+
+        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
+
+        Document submit = consentScreen.submit();
+        flow.parseAndValidateRedirect(submit.connection().response());
+
+        assertThat(flow.getAccessToken(), is(notNullValue()));
+    }
 }

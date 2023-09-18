@@ -26,7 +26,7 @@ public class AuthorizationCodeFlow {
     private final OAuthClient client;
     private String state = "testStateIsNotRandom";
     private String code;
-    private String token;
+    private String accessToken;
     private String idToken;
 
     public AuthorizationCodeFlow(String authUrl, OAuthClient client) {
@@ -64,10 +64,9 @@ public class AuthorizationCodeFlow {
                 .stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
 
         assertThat(query.get("state"), is(state));
-        assertThat(query.get("code"), is(notNullValue()));
 
         code = query.get("code");
-        token = query.get("token");
+        accessToken = query.get("access_token");
         idToken = query.get("id_token");
     }
 
@@ -87,7 +86,7 @@ public class AuthorizationCodeFlow {
                 .body("access_token", is(notNullValue()))
                 .body("refresh_token", is(notNullValue()))
                 .extract().body().as(AccessTokenResponse.class);
-        token = accessTokenResponse.accessToken();
+        accessToken = accessTokenResponse.accessToken();
         idToken = accessTokenResponse.idToken();
         return accessTokenResponse;
     }
@@ -100,8 +99,8 @@ public class AuthorizationCodeFlow {
         return code;
     }
 
-    public String getToken() {
-        return token;
+    public String getAccessToken() {
+        return accessToken;
     }
 
     public String getIdToken() {
