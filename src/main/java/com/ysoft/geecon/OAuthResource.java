@@ -25,14 +25,12 @@ public class OAuthResource {
     @POST
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Object post(AuthParams params,
-                       @FormParam("sessionId") String sessionId,
+    public Object post(@FormParam("sessionId") String sessionId,
                        @FormParam("username") String username,
-                       @FormParam("password") String password,
-                       @FormParam("scope") List<String> scopes) {
+                       @FormParam("password") String password) {
 
 
-        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException("Invalid session"));
+        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException(ErrorResponse.Error.access_denied, "Invalid session"));
         var user = validateUser(username, password);
         if (user == null) {
             return Templates.login(username, sessionId, "invalid_credentials");
@@ -67,7 +65,7 @@ public class OAuthResource {
             @FormParam("sessionId") String sessionId,
             @FormParam("scope") List<String> scopes) {
 
-        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException("Invalid session"));
+        sessionsRepo.getSession(sessionId).orElseThrow(() -> new OAuthException(ErrorResponse.Error.access_denied, "Invalid session"));
         var session = sessionsRepo.authorizeSession(sessionId, scopes);
 
         String redirectUri = session.params().getRedirectUri();

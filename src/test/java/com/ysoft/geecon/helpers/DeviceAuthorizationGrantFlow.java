@@ -5,8 +5,6 @@ import com.ysoft.geecon.dto.DeviceResponse;
 import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.error.ErrorResponse;
 
-import java.io.IOException;
-
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.CoreMatchers.is;
@@ -22,7 +20,7 @@ public class DeviceAuthorizationGrantFlow {
         this.client = client;
     }
 
-    public DeviceResponse start() throws IOException {
+    public DeviceResponse start() {
         deviceResponse = given().
                 formParam("client_id", client.clientId()).
                 when().post(deviceUrl)
