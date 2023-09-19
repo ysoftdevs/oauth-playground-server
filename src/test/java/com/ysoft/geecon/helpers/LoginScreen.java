@@ -4,6 +4,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.FormElement;
 
 import java.io.IOException;
+import java.util.Objects;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LoginScreen {
 
@@ -13,20 +17,32 @@ public class LoginScreen {
         this.form = doc.expectForm("form");
     }
 
-    public Document submit(String username, String password) throws IOException {
+    public Result submit(String username, String password) throws IOException {
         form.getElementsByAttributeValue("name", "username").val(username);
         form.getElementsByAttributeValue("name", "password").val(password);
 
-        return form.submit().post();
+        var document = form.submit().post();
+        return new Result() {
+            @Override
+            public ConsentScreen expectSuccess() {
+                return new ConsentScreen(document);
+            }
+
+            @Override
+            public LoginScreen expectError(String error) {
+                return new LoginScreen(document).expectError(error);
+            }
+        };
     }
 
-    public ConsentScreen submitCorrect(String username, String password) throws IOException {
-        Document posted = submit(username, password);
-        return new ConsentScreen(posted);
+    private LoginScreen expectError(String error) {
+        assertThat(Objects.requireNonNull(form.getElementById("error-popup")).text(), containsString(error));
+        return this;
     }
 
-    public LoginScreen submitWrong(String username, String password) throws IOException {
-        Document posted = submit(username, password);
-        return new LoginScreen(posted);
+    public interface Result {
+        ConsentScreen expectSuccess();
+
+        LoginScreen expectError(String error);
     }
 }

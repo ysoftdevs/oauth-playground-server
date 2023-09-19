@@ -46,7 +46,7 @@ public class AuthCodeGrantTest {
         AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
         LoginScreen loginScreen = flow.start(Map.of("scope", "scope1 scope2"));
 
-        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();
@@ -72,7 +72,7 @@ public class AuthCodeGrantTest {
         AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
         LoginScreen loginScreen = flow.start(Map.of("response_type", "token", "scope", "scope1 scope2"));
 
-        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();
@@ -87,7 +87,7 @@ public class AuthCodeGrantTest {
         flow.setPkce("PnRLncOTibrwxaBmBYm4QC89u0m4mz518sk1WFKjxnc", "bbb");
         LoginScreen loginScreen = flow.start(Map.of("scope", "scope1 scope2"));
 
-        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();

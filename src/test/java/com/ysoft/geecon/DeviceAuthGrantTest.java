@@ -56,7 +56,7 @@ public class DeviceAuthGrantTest {
         DeviceCodeScreen deviceCodeScreen = new DeviceCodeScreen(deviceResponse.verificationUri());
         LoginScreen loginScreen = deviceCodeScreen.enterCode(deviceResponse.userCode());
 
-        ConsentScreen consentScreen = loginScreen.submitCorrect("bob", "password");
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         consentScreen.submit();
 
         AccessTokenResponse accessTokenResponse = flow.exchangeDeviceCode().expectTokens();
