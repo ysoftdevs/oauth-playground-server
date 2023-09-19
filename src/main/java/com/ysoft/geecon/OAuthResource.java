@@ -1,6 +1,7 @@
 package com.ysoft.geecon;
 
 import com.ysoft.geecon.dto.*;
+import com.ysoft.geecon.error.ErrorResponse;
 import com.ysoft.geecon.error.OAuthException;
 import com.ysoft.geecon.repo.ClientsRepo;
 import com.ysoft.geecon.repo.SessionsRepo;
@@ -121,7 +122,7 @@ public class OAuthResource {
         return switch (params.getGrantType()) {
             case "authorization_code" -> redeemAuthorizationCode(params);
             case "urn:ietf:params:oauth:grant-type:device_code" -> redeemDeviceCode(params);
-            default -> throw new OAuthException("Unsupported grant type");
+            default -> throw new OAuthException(ErrorResponse.Error.invalid_request, "Unsupported grant type");
         };
     }
 
@@ -149,23 +150,23 @@ public class OAuthResource {
 
     private AccessTokenResponse redeemAuthorizationCode(TokenParams params) {
         var session = sessionsRepo.redeemAuthorizationCode(params.getCode())
-                .orElseThrow(() -> new OAuthException("Invalid code"));
+                .orElseThrow(() -> new OAuthException(ErrorResponse.Error.access_denied, "Invalid code"));
         validateClient(params, session);
         if (!session.validateCodeChallenge(params.getCodeVerifier())) {
-            throw new OAuthException("Invalid code verifier");
+            throw new OAuthException(ErrorResponse.Error.access_denied, "Invalid code verifier");
         }
         return session.tokens();
     }
 
     private AccessTokenResponse redeemDeviceCode(TokenParams params) {
         var session = sessionsRepo.getByAuthorizationCode(params.getDeviceCode())
-                .orElseThrow(() -> new OAuthException("Invalid code"));
+                .orElseThrow(() -> new OAuthException(ErrorResponse.Error.access_denied, "Invalid device code"));
         validateClient(params, session);
         if (session.tokens() != null) {
             sessionsRepo.redeemAuthorizationCode(params.getDeviceCode());
             return session.tokens();
         } else {
-            throw new OAuthException("Authorization pending");
+            throw new OAuthException(ErrorResponse.Error.authorization_pending, "Authorization pending");
         }
     }
 
@@ -177,24 +178,24 @@ public class OAuthResource {
 
     private OAuthClient validateClient(AuthParams params) {
         var client = clientsRepo.getClient(params.getClientId())
-                .orElseThrow(() -> new RuntimeException("Not a valid client"));
+                .orElseThrow(() -> new OAuthException(ErrorResponse.Error.invalid_request, "Not a valid client"));
         if (!client.validateRedirectUri(params.getRedirectUri())) {
-            throw new RuntimeException("Invalid redirect URI");
+            throw new OAuthException(ErrorResponse.Error.invalid_request, "Invalid redirect URI");
         }
         if (StringUtil.isNullOrEmpty(params.getState())) {
-            throw new RuntimeException("Invalid state");
+            throw new OAuthException(ErrorResponse.Error.invalid_request, "Invalid state");
         }
         return client;
     }
 
     private OAuthClient validateClient(TokenParams params, AuthorizationSession session) {
         var client = clientsRepo.getClient(params.getClientId())
-                .orElseThrow(() -> new RuntimeException("Not a valid client"));
+                .orElseThrow(() -> new OAuthException(ErrorResponse.Error.invalid_request, "Not a valid client"));
         if (!session.validateRedirectUri(params.getRedirectUri())) {
-            throw new RuntimeException("Invalid redirect URI");
+            throw new OAuthException(ErrorResponse.Error.invalid_request, "Invalid redirect URI");
         }
         if (!client.validateSecret(params.getClientSecret())) {
-            throw new RuntimeException("Invalid secret");
+            throw new OAuthException(ErrorResponse.Error.unauthorized_client, "Invalid secret");
         }
         return client;
     }

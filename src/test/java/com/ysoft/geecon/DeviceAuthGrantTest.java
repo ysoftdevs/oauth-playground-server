@@ -3,6 +3,7 @@ package com.ysoft.geecon;
 import com.ysoft.geecon.dto.DeviceResponse;
 import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.dto.User;
+import com.ysoft.geecon.error.ErrorResponse;
 import com.ysoft.geecon.helpers.ConsentScreen;
 import com.ysoft.geecon.helpers.DeviceAuthorizationGrantFlow;
 import com.ysoft.geecon.helpers.DeviceCodeScreen;
@@ -71,6 +72,7 @@ public class DeviceAuthGrantTest {
     public void deviceAuthGrant_authorizationPending() throws IOException {
         DeviceAuthorizationGrantFlow flow = new DeviceAuthorizationGrantFlow(deviceUri, CLIENT);
         flow.start();
-        flow.exchangeDeviceCodeError();
+        ErrorResponse errorResponse = flow.exchangeDeviceCodeError();
+        assertThat(errorResponse.error(), is(ErrorResponse.Error.authorization_pending));
     }
 }

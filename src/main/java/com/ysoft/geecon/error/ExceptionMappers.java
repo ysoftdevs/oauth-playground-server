@@ -35,6 +35,6 @@ class ExceptionMappers {
 
     @CheckedTemplate
     public static class Templates {
-        public static native TemplateInstance error(OAuthException.ErrorResponse response);
+        public static native TemplateInstance error(ErrorResponse response);
     }
 }
