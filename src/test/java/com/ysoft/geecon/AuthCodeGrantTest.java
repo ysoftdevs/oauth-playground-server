@@ -12,7 +12,6 @@ import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
-import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,14 +42,15 @@ public class AuthCodeGrantTest {
 
     @Test
     public void authCodeGrant() throws IOException {
-        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
-        LoginScreen loginScreen = flow.start(Map.of("scope", "scope1 scope2"));
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .scope("scope1 scope2");
+        LoginScreen loginScreen = flow.start().expectLogin();
 
         ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();
-        flow.parseAndValidateRedirect(submit.connection().response());
+        flow.expectSuccessfulRedirect(submit.connection().response());
 
         assertThat(flow.getCode(), is(notNullValue()));
         assertThat(flow.getAccessToken(), is(nullValue()));
@@ -61,37 +61,41 @@ public class AuthCodeGrantTest {
 
     @Test
     public void authCodeGrant_invalidResponseType() throws IOException {
-        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
-        Connection.Response response = flow.startExpectError(Map.of("response_type", ""));
-        Map<String, String> query = flow.parseAndValidateRedirectError(response);
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .param("response_type", "");
+        Map<String, String> query = flow.start().expectErrorRedirect();
         assertThat(query.get("error"), is(ErrorResponse.Error.unsupported_response_type.name()));
     }
 
     @Test
     public void implicitGrant() throws IOException {
-        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
-        LoginScreen loginScreen = flow.start(Map.of("response_type", "token", "scope", "scope1 scope2"));
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .param("response_type", "token")
+                .scope("scope1 scope2");
+        LoginScreen loginScreen = flow.start().expectLogin();
 
         ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();
-        flow.parseAndValidateRedirect(submit.connection().response());
+        flow.expectSuccessfulRedirect(submit.connection().response());
 
         assertThat(flow.getAccessToken(), is(notNullValue()));
     }
 
     @Test
     public void authCodeGrantWithPkce() throws IOException {
-        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
-        flow.setPkce("PnRLncOTibrwxaBmBYm4QC89u0m4mz518sk1WFKjxnc", "bbb");
-        LoginScreen loginScreen = flow.start(Map.of("scope", "scope1 scope2"));
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .pkce("PnRLncOTibrwxaBmBYm4QC89u0m4mz518sk1WFKjxnc", "bbb")
+                .scope("scope1 scope2");
+
+        LoginScreen loginScreen = flow.start().expectLogin();
 
         ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
         assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
 
         Document submit = consentScreen.submit();
-        flow.parseAndValidateRedirect(submit.connection().response());
+        flow.expectSuccessfulRedirect(submit.connection().response());
 
         assertThat(flow.getCode(), is(notNullValue()));
         assertThat(flow.getAccessToken(), is(nullValue()));

@@ -28,66 +28,56 @@ public class AuthorizationCodeFlow {
     private String accessToken;
     private String idToken;
 
+    private Map<String, String> query;
+
     public AuthorizationCodeFlow(String authUrl, OAuthClient client) {
         this.authUrl = authUrl;
         this.client = client;
+
+        query = new HashMap<>();
+        query.put("client_id", client.clientId());
+        query.put("redirect_uri", client.redirectUri());
+        query.put("state", state);
     }
 
-    public LoginScreen start(Map<String, String> additionalData) throws IOException {
-        var data = defaultQuery();
-        if (additionalData != null) {
-            data.putAll(additionalData);
-        }
+    public AuthorizationCodeFlow param(String key, String value) {
+        query.put(key, value);
+        return this;
+    }
 
-        Document login = Jsoup.connect(authUrl)
-                .data(data)
+    public Result start() throws IOException {
+        Document document = Jsoup.connect(authUrl)
+                .followRedirects(false)
+                .data(query)
                 .get();
 
-        return new LoginScreen(login);
+        return new Result() {
+            @Override
+            public LoginScreen expectLogin() {
+                return new LoginScreen(document);
+            }
+
+            @Override
+            public Map<String, String> expectErrorRedirect() {
+                var response = document.connection().response();
+
+                Map<String, String> query = expectRedirect(response);
+                assertThat(query.get("error"), is(notNullValue()));
+                assertThat(query.get("error_description"), is(notNullValue()));
+                return query;
+            }
+        };
     }
 
-    public Connection.Response startExpectError(Map<String, String> additionalData) throws IOException {
-        var data = defaultQuery();
-        if (additionalData != null) {
-            data.putAll(additionalData);
-        }
-
-        return Jsoup.connect(authUrl)
-                .followRedirects(false)
-                .data(data)
-                .get()
-                .connection()
-                .response();
-    }
-
-    private Map<String, String> defaultQuery() {
-        var map = new HashMap<String, String>();
-        map.put("client_id", client.clientId());
-        map.put("redirect_uri", client.redirectUri());
-        map.put("state", state);
-        if (codeChallenge != null) {
-            map.put("code_challenge", codeChallenge);
-            map.put("code_challenge_method", "S256");
-        }
-        return map;
-    }
-
-    public void parseAndValidateRedirect(Connection.Response response) {
-        assertThat(response.statusCode(), is(303));
-        assertThat(response.header("location"), startsWith(client.redirectUri()));
-
-        URI location = URI.create(Objects.requireNonNull(response.header("location")));
-        Map<String, String> query = URLEncodedUtils.parse(location.getQuery(), Charset.defaultCharset())
-                .stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
-
-        assertThat(query.get("state"), is(state));
+    public void expectSuccessfulRedirect(Connection.Response response) {
+        Map<String, String> query = expectRedirect(response);
 
         code = query.get("code");
         accessToken = query.get("access_token");
         idToken = query.get("id_token");
     }
 
-    public Map<String, String> parseAndValidateRedirectError(Connection.Response response) {
+    private Map<String, String> expectRedirect(Connection.Response response) {
         assertThat(response.statusCode(), is(303));
         assertThat(response.header("location"), startsWith(client.redirectUri()));
 
@@ -96,8 +86,6 @@ public class AuthorizationCodeFlow {
                 .stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
 
         assertThat(query.get("state"), is(state));
-        assertThat(query.get("error"), is(notNullValue()));
-        assertThat(query.get("error_description"), is(notNullValue()));
         return query;
     }
 
@@ -121,8 +109,20 @@ public class AuthorizationCodeFlow {
         return idToken;
     }
 
-    public void setPkce(String codeChallenge, String codeVerifier) {
-        this.codeChallenge = codeChallenge;
+    public AuthorizationCodeFlow pkce(String codeChallenge, String codeVerifier) {
+        query.put("code_challenge", codeChallenge);
+        query.put("code_challenge_method", "S256");
         this.codeVerifier = codeVerifier;
+        return this;
+    }
+
+    public AuthorizationCodeFlow scope(String scope) {
+        return param("scope", scope);
+    }
+
+    public interface Result {
+        LoginScreen expectLogin();
+
+        Map<String, String> expectErrorRedirect();
     }
 }
