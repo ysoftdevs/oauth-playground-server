@@ -2,6 +2,7 @@ package com.ysoft.geecon;
 
 import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.dto.User;
+import com.ysoft.geecon.error.ErrorResponse;
 import com.ysoft.geecon.helpers.AuthorizationCodeFlow;
 import com.ysoft.geecon.helpers.ConsentScreen;
 import com.ysoft.geecon.helpers.LoginScreen;
@@ -10,6 +11,7 @@ import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +56,14 @@ public class AuthCodeGrantTest {
         flow.exchangeCode();
 
         assertThat(flow.getAccessToken(), is(notNullValue()));
+    }
+
+    @Test
+    public void authCodeGrant_invalidResponseType() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT);
+        Connection.Response response = flow.startExpectError(Map.of("response_type", ""));
+        Map<String, String> query = flow.parseAndValidateRedirectError(response);
+        assertThat(query.get("error"), is(ErrorResponse.Error.unsupported_response_type.name()));
     }
 
     @Test

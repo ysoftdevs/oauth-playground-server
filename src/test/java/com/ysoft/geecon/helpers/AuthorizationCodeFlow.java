@@ -49,6 +49,20 @@ public class AuthorizationCodeFlow {
         return new LoginScreen(login);
     }
 
+    public Connection.Response startExpectError(Map<String, String> additionalData) throws IOException {
+        var data = defaultQuery();
+        if (additionalData != null) {
+            data.putAll(additionalData);
+        }
+
+        return Jsoup.connect(authUrl)
+                .followRedirects(false)
+                .data(data)
+                .get()
+                .connection()
+                .response();
+    }
+
     private Map<String, String> defaultQuery() {
         var map = new HashMap<String, String>();
         map.put("client_id", client.clientId());
@@ -74,6 +88,20 @@ public class AuthorizationCodeFlow {
         code = query.get("code");
         accessToken = query.get("access_token");
         idToken = query.get("id_token");
+    }
+
+    public Map<String, String> parseAndValidateRedirectError(Connection.Response response) {
+        assertThat(response.statusCode(), is(303));
+        assertThat(response.header("location"), startsWith(client.redirectUri()));
+
+        URI location = URI.create(Objects.requireNonNull(response.header("location")));
+        Map<String, String> query = URLEncodedUtils.parse(location.getQuery(), Charset.defaultCharset())
+                .stream().collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+
+        assertThat(query.get("state"), is(state));
+        assertThat(query.get("error"), is(notNullValue()));
+        assertThat(query.get("error_description"), is(notNullValue()));
+        return query;
     }
 
     public AccessTokenResponse exchangeCode() {

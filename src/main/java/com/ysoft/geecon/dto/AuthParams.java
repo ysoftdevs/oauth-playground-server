@@ -12,6 +12,14 @@ public class AuthParams {
                 .toList();
     }
 
+    public boolean validateResponseType() {
+        try {
+            return !getResponseTypes().isEmpty();
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
     @RestQuery("login_hint")
     String loginHint;
     @RestQuery("response_type")

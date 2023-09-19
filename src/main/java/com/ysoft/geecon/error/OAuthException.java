@@ -1,19 +1,14 @@
 package com.ysoft.geecon.error;
 
-public class OAuthException extends RuntimeException {
-    private final ErrorResponse response;
+import jakarta.ws.rs.core.Response;
 
-    public OAuthException(ErrorResponse response) {
-        super("OAuth error: " + response.error() + " " + response.description());
+public abstract class OAuthException extends RuntimeException {
+    protected final ErrorResponse response;
+
+    public OAuthException(String message, ErrorResponse response) {
+        super(message);
         this.response = response;
     }
 
-    public OAuthException(ErrorResponse.Error error, String description) {
-        this(new ErrorResponse(error, description));
-    }
-
-    public ErrorResponse getResponse() {
-        return response;
-    }
-
+    public abstract Response getResponse();
 }
