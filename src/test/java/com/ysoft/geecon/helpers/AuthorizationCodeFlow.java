@@ -1,6 +1,5 @@
 package com.ysoft.geecon.helpers;
 
-import com.ysoft.geecon.dto.AccessTokenResponse;
 import com.ysoft.geecon.dto.OAuthClient;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -16,8 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -104,31 +101,8 @@ public class AuthorizationCodeFlow {
         return query;
     }
 
-    public AccessTokenResponse exchangeCode() {
-        Map<String, String> tokenForm = new HashMap<>();
-        tokenForm.put("grant_type", "authorization_code");
-        tokenForm.put("client_id", client.clientId());
-        tokenForm.put("redirect_uri", client.redirectUri());
-        tokenForm.put("code", code);
-        if (codeVerifier != null) {
-            tokenForm.put("code_verifier", codeVerifier);
-        }
-
-        AccessTokenResponse accessTokenResponse = given()
-                .formParams(tokenForm)
-                .when()
-                .post("/auth/token")
-                .then()
-                .statusCode(200)
-                .contentType(JSON)
-                .body("token_type", is("Bearer"))
-                .body("expires_in", is(notNullValue()))
-                .body("access_token", is(notNullValue()))
-                .body("refresh_token", is(notNullValue()))
-                .extract().body().as(AccessTokenResponse.class);
-        accessToken = accessTokenResponse.accessToken();
-        idToken = accessTokenResponse.idToken();
-        return accessTokenResponse;
+    public TokenEndpointCall exchangeCode() {
+        return new TokenEndpointCall(client).authorizationCode(code, codeVerifier);
     }
 
     public String getState() {

@@ -1,5 +1,6 @@
 package com.ysoft.geecon;
 
+import com.ysoft.geecon.dto.AccessTokenResponse;
 import com.ysoft.geecon.dto.OAuthClient;
 import com.ysoft.geecon.dto.User;
 import com.ysoft.geecon.error.ErrorResponse;
@@ -53,9 +54,9 @@ public class AuthCodeGrantTest {
 
         assertThat(flow.getCode(), is(notNullValue()));
         assertThat(flow.getAccessToken(), is(nullValue()));
-        flow.exchangeCode();
+        AccessTokenResponse accessTokenResponse = flow.exchangeCode().expectTokens();
 
-        assertThat(flow.getAccessToken(), is(notNullValue()));
+        assertThat(accessTokenResponse.accessToken(), is(notNullValue()));
     }
 
     @Test
@@ -94,9 +95,9 @@ public class AuthCodeGrantTest {
 
         assertThat(flow.getCode(), is(notNullValue()));
         assertThat(flow.getAccessToken(), is(nullValue()));
-        flow.exchangeCode();
+        AccessTokenResponse accessTokenResponse = flow.exchangeCode().expectTokens();
 
-        assertThat(flow.getAccessToken(), is(notNullValue()));
+        assertThat(accessTokenResponse.accessToken(), is(notNullValue()));
 
     }
 }

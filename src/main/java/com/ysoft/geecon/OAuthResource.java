@@ -123,7 +123,8 @@ public class OAuthResource {
         return switch (params.getGrantType()) {
             case "authorization_code" -> redeemAuthorizationCode(params);
             case "urn:ietf:params:oauth:grant-type:device_code" -> redeemDeviceCode(params);
-            default -> throw new OAuthApiException(ErrorResponse.Error.invalid_request, "Unsupported grant type");
+            default ->
+                    throw new OAuthApiException(ErrorResponse.Error.unsupported_grant_type, "Unsupported grant type");
         };
     }
 
