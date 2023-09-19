@@ -12,9 +12,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class LoginScreen {
 
     private final FormElement form;
+    private final Document document;
 
-    public LoginScreen(Document doc) {
-        this.form = doc.expectForm("form");
+    public LoginScreen(Document document) {
+        this.form = document.expectForm("form");
+        this.document = document;
     }
 
     public Result submit(String username, String password) throws IOException {
@@ -36,7 +38,7 @@ public class LoginScreen {
     }
 
     private LoginScreen expectError(String error) {
-        assertThat(Objects.requireNonNull(form.getElementById("error-popup")).text(), containsString(error));
+        assertThat(Objects.requireNonNull(document.getElementById("error-popup")).text(), containsString(error));
         return this;
     }
 

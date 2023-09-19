@@ -60,6 +60,17 @@ public class AuthCodeGrantTest {
     }
 
     @Test
+    public void badCredentials() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .scope("scope1 scope2");
+        LoginScreen loginScreen = flow.start().expectLogin();
+
+        loginScreen.submit("x", "bbb").expectError("Invalid credentials")
+                .submit("bob", "bbb").expectError("Invalid credentials")
+                .submit("bob", "password").expectSuccess();
+    }
+
+    @Test
     public void authCodeGrant_invalidResponseType() throws IOException {
         AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
                 .param("response_type", "");
