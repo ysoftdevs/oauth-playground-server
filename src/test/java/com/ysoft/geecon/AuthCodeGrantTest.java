@@ -113,6 +113,26 @@ public class AuthCodeGrantTest {
         AccessTokenResponse accessTokenResponse = flow.exchangeCode().expectTokens();
 
         assertThat(accessTokenResponse.accessToken(), is(notNullValue()));
+    }
 
+    @Test
+    public void authCodeGrantWithPkce_wrong() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .pkce("badChallenge", "bbb")
+                .scope("scope1 scope2");
+
+        LoginScreen loginScreen = flow.start().expectLogin();
+
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
+        assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
+
+        Document submit = consentScreen.submit();
+        flow.expectSuccessfulRedirect(submit.connection().response());
+
+        assertThat(flow.getCode(), is(notNullValue()));
+        assertThat(flow.getAccessToken(), is(nullValue()));
+        ErrorResponse errorResponse = flow.exchangeCode().expectError(400);
+
+        assertThat(errorResponse.error(), is(ErrorResponse.Error.access_denied));
     }
 }
