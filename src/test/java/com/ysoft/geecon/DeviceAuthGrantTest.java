@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -44,7 +45,7 @@ public class DeviceAuthGrantTest {
     @BeforeEach
     void beforeAll() {
         clientsRepo.register(CLIENT);
-        usersRepo.register(new User("bob", "password"));
+        usersRepo.register(new User("bob", "password", List.of()));
     }
 
 
