@@ -22,7 +22,7 @@ public class ClientsRepo {
         register(new OAuthClient("oauth-playground", "OAuth playground", null,
                 List.of("https://oauth-playground.online/flow/code-2", "https://oauth-playground.online/flow/pkce-3")));
         register(new OAuthClient("oauth-playground-localhost", "OAuth playground", null,
-                List.of("http://localhost:5555/flow/code-2", "http://localhost:5555/flow/pkce-2")));
+                List.of("http://localhost:5555/flow/code-2", "http://localhost:5555/flow/pkce-3")));
     }
 
     public Optional<OAuthClient> getClient(String clientId) {
