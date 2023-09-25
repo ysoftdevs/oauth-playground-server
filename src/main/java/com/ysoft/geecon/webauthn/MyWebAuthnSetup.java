@@ -6,6 +6,7 @@ import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.auth.webauthn.AttestationCertificates;
 import io.vertx.ext.auth.webauthn.Authenticator;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -13,8 +14,12 @@ import java.util.List;
 
 @ApplicationScoped
 public class MyWebAuthnSetup implements WebAuthnUserProvider {
+    public static final String AUTHORIZED_USER = MyWebAuthnSetup.class.getPackageName() + "#AUTHORIZED_USER";
     @Inject
     UsersRepo usersRepo;
+
+    @Inject
+    RoutingContext routingContext;
 
     private static List<Authenticator> toAuthenticators(List<WebAuthnCredential> dbs) {
         return dbs.stream().map(MyWebAuthnSetup::toAuthenticator).toList();
@@ -69,6 +74,9 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
             usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential1)));
             return Uni.createFrom().nullItem();
         } else {
+            if (routingContext.get(AUTHORIZED_USER) != null) {
+                return Uni.createFrom().nullItem();
+            }
             // returning (or duplicate) user with new credential -> reject,
             // as we do not provide a means to register additional credentials yet
             return Uni.createFrom().failure(new Throwable("Duplicate user"));
