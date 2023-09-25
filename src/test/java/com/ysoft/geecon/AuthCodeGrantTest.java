@@ -25,7 +25,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @QuarkusTest
 public class AuthCodeGrantTest {
-    public static final OAuthClient CLIENT = new OAuthClient("myclient", "", null, "https://myserver:8888/success");
+    public static final OAuthClient CLIENT = new OAuthClient("myclient", "", null, List.of("https://myserver:8888/success"));
     @Inject
     ClientsRepo clientsRepo;
     @Inject

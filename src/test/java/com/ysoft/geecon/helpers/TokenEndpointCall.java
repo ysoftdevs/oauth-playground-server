@@ -26,7 +26,7 @@ public class TokenEndpointCall {
 
     public TokenEndpointCall authorizationCode(String code, String codeVerifier) {
         tokenForm.put("grant_type", "authorization_code");
-        tokenForm.put("redirect_uri", client.redirectUri());
+        tokenForm.put("redirect_uri", client.redirectUris().get(0));
         tokenForm.put("code", code);
         if (codeVerifier != null) {
             tokenForm.put("code_verifier", codeVerifier);

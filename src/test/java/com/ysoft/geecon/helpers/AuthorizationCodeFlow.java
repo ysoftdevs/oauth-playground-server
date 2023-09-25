@@ -36,7 +36,7 @@ public class AuthorizationCodeFlow {
 
         query = new HashMap<>();
         query.put("client_id", client.clientId());
-        query.put("redirect_uri", client.redirectUri());
+        query.put("redirect_uri", client.redirectUris().get(0));
         query.put("state", state);
     }
 
@@ -79,7 +79,7 @@ public class AuthorizationCodeFlow {
 
     private Map<String, String> expectRedirect(Connection.Response response) {
         assertThat(response.statusCode(), is(303));
-        assertThat(response.header("location"), startsWith(client.redirectUri()));
+        assertThat(response.header("location"), startsWith(client.redirectUris().get(0)));
 
         URI location = URI.create(Objects.requireNonNull(response.header("location")));
         Map<String, String> query = URLEncodedUtils.parse(location.getQuery(), Charset.defaultCharset())
