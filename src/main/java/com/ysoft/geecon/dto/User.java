@@ -19,7 +19,7 @@ public record User(String login, String password, List<WebAuthnCredential> crede
         List<WebAuthnCredential> newCredentials;
         if (existing.isPresent()) {
             // TODO need to decide if immutable or not
-            existing.get().counter++;
+            existing.get().counter = webAuthnCredential.counter;
             newCredentials = credentials;
         } else {
             newCredentials = new ArrayList<>(credentials);

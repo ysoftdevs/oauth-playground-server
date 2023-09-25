@@ -55,11 +55,23 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
     @Override
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
         WebAuthnCredential credential1 = new WebAuthnCredential(authenticator);
-        usersRepo.getUser(authenticator.getUserName())
-                .ifPresentOrElse(
-                        user -> usersRepo.register(user.withAddedCredential(credential1)),
-                        () -> usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential1)))
-                );
-        return Uni.createFrom().nullItem();
+
+        var existingUser = usersRepo.getUser(authenticator.getUserName());
+        var existingCredential = existingUser.stream().flatMap(u -> u.credentials().stream())
+                .filter(c -> authenticator.getCredID().equals(c.credID)).findAny();
+
+        if (existingUser.isPresent() && existingCredential.isPresent()) {
+            // returning user and credential -> update counter
+            usersRepo.register(existingUser.get().withAddedCredential(existingCredential.get()));
+            return Uni.createFrom().nullItem();
+        } else if (existingUser.isEmpty()) {
+            // new user -> register
+            usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential1)));
+            return Uni.createFrom().nullItem();
+        } else {
+            // returning (or duplicate) user with new credential -> reject,
+            // as we do not provide a means to register additional credentials yet
+            return Uni.createFrom().failure(new Throwable("Duplicate user"));
+        }
     }
 }
