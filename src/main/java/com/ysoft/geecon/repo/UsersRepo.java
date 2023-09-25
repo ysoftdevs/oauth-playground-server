@@ -14,6 +14,7 @@ public class UsersRepo {
 
     public UsersRepo() {
         register(new User("bob", "Password1", List.of()));
+        register(new User("user", "user", List.of()));
     }
 
     public Optional<User> getUser(String username) {

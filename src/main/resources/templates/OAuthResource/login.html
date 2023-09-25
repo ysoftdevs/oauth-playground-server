@@ -74,6 +74,11 @@
     <div class="error-popup" id="error-popup">Invalid credentials</div>
     {/if}
     <form action="/auth" method="post">
+        Predefined accounts:
+        <ul>
+            <li>bob / Password1</li>
+            <li>user / user</li>
+        </ul>
         <input type="hidden" name="sessionId" value="{sessionId}">
         <div class="form-group">
             <label for="username">Username:</label>
@@ -81,7 +86,6 @@
         </div>
         <div class="form-group">
             <label for="password">Password:</label>
-            (try "Password1")
             <input type="password" id="password" name="password" required>
         </div>
         <button type="submit" class="login-button">Login</button>
