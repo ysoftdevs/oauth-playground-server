@@ -110,7 +110,7 @@ public class OAuthResource {
                 uriInfo.getBaseUriBuilder()
                         .path(OAuthResource.class)
                         .path(OAuthResource.class, "enterDeviceCode").build(),
-                10,
+                1,
                 180
         );
     }
