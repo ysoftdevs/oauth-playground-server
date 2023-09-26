@@ -15,41 +15,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script charset="UTF-8" src="/js/webauthn-debug.js" type="text/javascript"></script>
     <style>
-        .container {
-            display: grid;
-            grid-template-columns: auto auto auto;
+
+
+        .code {
+            white-space: pre;
         }
 
-        button, input {
-            margin: 5px 0;
-        }
-
-        .item {
-            padding: 20px;
-        }
-
-        nav > ul {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #333;
-        }
-
-        nav > ul > li {
-            float: left;
-        }
-
-        nav > ul > li > a {
-            display: block;
-            color: white;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-
-        nav > ul > li > a:hover {
-            background-color: #111;
+        .step {
+            display: none;
         }
     </style>
 </head>
@@ -57,55 +30,45 @@
 <body>
 <div class="container">
     <input id="userName" placeholder="User name"/><br/>
-    <button id="login">Login</button>
-    <button id="register">Register</button>
+    <button class="nextBtn" id="login">Login</button>
+    <button class="nextBtn" id="register">Register</button>
 </div>
 
-<div id="trace"></div>
-
-<div class="container" id="server1">
-    <div id="server1-call"></div>
-    <div id="server1-response"></div>
+<div class="container step" id="server1-request">
+    The interaction starts with an AJAX call.
+    <div class="code">POST <span id="server1-url"></span>
+        <div id="server1-call"></div>
+    </div>
+    <button class="nextBtn">Request challenge</button>
 </div>
 
-<div class="container" id="navigator">
-    <div id="navigator-call"></div>
-    <div id="navigator-response"></div>
+<div class="container step" id="server1-response">
+    The server prepares a challenge for the browser to sign.
+    <div class="code" id="server1-response-body"></div>
+    <button class="nextBtn">Continue</button>
 </div>
 
-<div class="container" id="server2">
-    <div id="server2-call"></div>
-    <div id="server2-response"></div>
+<div class="container step" id="navigator-request">
+    The challenge is passed to the browser call:
+    <div class="code" id="navigator-call"></div>
+    <button class="nextBtn">Call Webauthn API</button>
+</div>
+
+<div class="container step" id="navigator-response">
+    Which responds:
+    <div class="code" id="navigator-response-body"></div>
+    The <strong>response.clientDataJSON</strong> are base64 encoded:
+    <div class="code" id="navigator-clientDataJSON"></div>
+    <button class="nextBtn">Finish the interaction</button>
 </div>
 </div>
 
 <div id="result"></div>
+<div id="trace"></div>
 
 <form action="#" method="POST">
-    <input id="webAuthnId" name="webAuthnId" placeholder="webAuthnId"/><br/>
-    <input id="webAuthnRawId" name="webAuthnRawId" placeholder="webAuthnRawId"/><br/>
-    <input id="webAuthnResponseAttestationObject" name="webAuthnResponseAttestationObject"
-           placeholder="webAuthnResponseAttestationObject"/><br/>
-    <input id="webAuthnResponseClientDataJSON" name="webAuthnResponseClientDataJSON"
-           placeholder="webAuthnResponseClientDataJSON"/><br/>
-    <div id="webAuthnResponseClientDataJSONJson"></div>
-    <br/>
-    <input id="webAuthnResponseAuthenticatorData" name="webAuthnResponseAuthenticatorData"
-           placeholder="webAuthnResponseAuthenticatorData"/><br/>
-    <div id="webAuthnResponseAuthenticatorDataJson"></div>
-    <br/>
-    <input id="webAuthnResponseSignature" name="webAuthnResponseSignature"
-           placeholder="webAuthnResponseSignature"/><br/>
-    <div id="webAuthnResponseSignatureJson"></div>
-    <br/>
-    <input id="webAuthnResponseUserHandle" name="webAuthnResponseUserHandle"
-           placeholder="webAuthnResponseUserHandle"/><br/>
-    <div id="webAuthnResponseUserHandleJson"></div>
-    <br/>
-
-    <input id="webAuthnType" name="webAuthnType" placeholder="webAuthnType"/><br/>
-    <button formaction="/webauthn/register" type="submit">Finish registration</button>
-    <button formaction="/webauthn/login" type="submit">Finish login</button>
+    <input name="sessionId" type="hidden" value="somesessionid">
+    <div id="form-generated"></div>
 </form>
 
 <script type="text/javascript">
@@ -117,39 +80,113 @@
         }
     }
 
-    function fillOrHideFormField(id, value) {
-        let el = document.getElementById(id);
-        if (!el) throw "No element #" + id;
-        el.value = value;
-        if (value !== undefined) {
-            el.style.display = "";
-        } else {
-            //el.style.display = "none";
-        }
-    }
-
-    function fillOrHideJsonField(id, value) {
-        let el = document.getElementById(id);
-        if (!el) throw "No element #" + id;
-        if (value !== undefined) {
-            el.style.display = "";
-            el.innerHTML = tryDecodeBase64(value);
-        } else {
-            el.style.display = "none";
-        }
-    }
-
     function tracer(stage, params) {
         console.log(stage, params)
+
+        switch (stage) {
+            case "register-request":
+                return traceRegisterRequest(params);
+            case "register-response":
+                return traceRegisterResponse(params);
+            case "credentials-create-request":
+                return traceCredentialsCreateRequest(params);
+            case "credentials-create-response":
+                return traceCredentialsCreateResponse(params);
+            case "login-request":
+                return traceLoginRequest(params);
+            case "login-response":
+                return traceLoginResponse(params);
+            case "credentials-get-request":
+                return traceCredentialsGetRequest(params);
+            case "credentials-get-response":
+                return traceCredentialsGetResponse(params);
+            default:
+                return traceGeneric(stage, params);
+        }
+    }
+
+    function continueButton(where, result) {
+        const button = $("button", $(where)).show();
+        if (button.length) {
+            return new Promise((resolve, reject) => {
+                button.click(() => {
+                    resolve(result);
+                    $(button).hide();
+                });
+            });
+        } else {
+            return Promise.resolve(result);
+        }
+    }
+
+    function traceRegisterRequest(params) {
+        $(".step").hide();
+        $("#server1-request").show();
+        $("#server1-url").html(params.url)
+        $("#server1-call").html(JSON.stringify(params.body, null, 2));
+        return continueButton("#server1-request", params);
+    }
+
+    function traceRegisterResponse(params) {
+        $("#server1-response").show();
+        $("#server1-response-body").html(JSON.stringify(params, null, 2));
+        return continueButton("#server1-response", params);
+    }
+
+    function traceLoginRequest(params) {
+        $(".step").hide();
+        $("#server1-request").show();
+        $("#server1-url").html(params.url)
+        $("#server1-call").html(JSON.stringify(params.body, null, 2));
+        return continueButton("#server1-request", params);
+    }
+
+    function traceLoginResponse(params) {
+        $("#server1-response").show();
+        $("#server1-response-body").html(JSON.stringify(params, null, 2));
+        return continueButton("#server1-response", params);
+    }
+
+    function traceCredentialsCreateRequest(challenge) {
+        $("#navigator-request").show();
+        $("#navigator-call").html("navigator.credentials.create({ publicKey: ... });");
+        return continueButton("#navigator-request", challenge);
+    }
+
+    function traceCredentialsCreateResponse(response) {
+        $("#navigator-response").show();
+        $("#navigator-response-body").html(JSON.stringify(response, null, 2));
+        $("#navigator-clientDataJSON").html(JSON.stringify(JSON.parse(tryDecodeBase64(response.response.clientDataJSON)), null, 2));
+        return continueButton("#navigator-response", response);
+    }
+
+    function traceCredentialsGetRequest(challenge) {
+        $("#navigator-request").show();
+        $("#navigator-call").html("navigator.credentials.get({ publicKey: ... });");
+        return continueButton("#navigator-request", challenge);
+    }
+
+    function traceCredentialsGetResponse(response) {
+        $("#navigator-response").show();
+        $("#navigator-response-body").html(JSON.stringify(response, null, 2));
+        $("#navigator-clientDataJSON").html(JSON.stringify(JSON.parse(tryDecodeBase64(response.response.clientDataJSON)), null, 2));
+        return continueButton("#navigator-response", response);
+    }
+
+    function traceGeneric(stage, params) {
         const content = JSON.stringify(params);
         const trace = $("<div class='container'></div>").attr("id", stage).html(content).appendTo("#trace");
-        const button = $("<button>Continue</button>").appendTo(trace)
-        return new Promise((resolve, reject) => {
-            button.click(() => {
-                resolve(params);
-                $(button).remove();
-            });
-        });
+        return continueButton(trace, params);
+    }
+
+    function form(action, fields) {
+        const $form = $("form").attr("action", action);
+        const $fields = $("#form-generated", $form).empty()
+        for ([key, value] of Object.entries(fields)) {
+            console.log(key);
+            $("<input type='hidden'>").attr("name", key).val(value).appendTo($fields)
+        }
+        $form.submit();
     }
 
     const webAuthn = new WebAuthn({
@@ -170,24 +207,15 @@
         result.replaceChildren();
         webAuthn.loginOnly({name: userName})
             .then(body => {
-                // store the registration JSON in form elements
-                fillOrHideFormField('webAuthnId', body.id);
-                fillOrHideFormField('webAuthnRawId', body.rawId);
-                fillOrHideFormField('webAuthnResponseClientDataJSON', body.response.clientDataJSON);
-                fillOrHideJsonField('webAuthnResponseClientDataJSONJson', body.response.clientDataJSON);
-                fillOrHideFormField('webAuthnResponseAuthenticatorData', body.response.authenticatorData);
-                fillOrHideFormField('webAuthnResponseSignature', body.response.signature);
-                fillOrHideFormField('webAuthnResponseUserHandle', body.response.userHandle);
-                fillOrHideFormField('webAuthnType', body.type);
-
-
-                // document.getElementById('webAuthnId').value = body.id;
-                // document.getElementById('webAuthnRawId').value = body.rawId;
-                // document.getElementById('webAuthnResponseClientDataJSON').value = body.response.clientDataJSON;
-                // document.getElementById('webAuthnResponseAuthenticatorData').value = body.response.authenticatorData;
-                // document.getElementById('webAuthnResponseSignature').value = body.response.signature;
-                // document.getElementById('webAuthnResponseUserHandle').value = body.response.userHandle;
-                // document.getElementById('webAuthnType').value = body.type;
+                form("/webauthn/login", {
+                    'webAuthnId': body.id,
+                    'webAuthnRawId': body.rawId,
+                    'webAuthnResponseClientDataJSON': body.response.clientDataJSON,
+                    'webAuthnResponseAuthenticatorData': body.response.authenticatorData,
+                    'webAuthnResponseSignature': body.response.signature,
+                    'webAuthnResponseUserHandle': body.response.userHandle,
+                    'webAuthnType': body.type
+                });
             })
             .catch(err => {
                 result.append("Login failed: " + err);
@@ -207,14 +235,13 @@
 
         webAuthn.registerOnly({name: userName, displayName: userName /*firstName + " " + lastName*/})
             .then(body => {
-                // store the registration JSON in form elements
-                fillOrHideFormField('webAuthnId', body.id);
-                fillOrHideFormField('webAuthnRawId', body.rawId);
-                fillOrHideFormField('webAuthnResponseAttestationObject', body.response.attestationObject);
-                fillOrHideFormField('webAuthnResponseClientDataJSON', body.response.clientDataJSON);
-                fillOrHideJsonField('webAuthnResponseClientDataJSONJson', body.response.clientDataJSON);
-                fillOrHideFormField('webAuthnType', body.type);
-
+                form("/webauthn/register", {
+                    'webAuthnId': body.id,
+                    'webAuthnRawId': body.rawId,
+                    'webAuthnResponseAttestationObject': body.response.attestationObject,
+                    'webAuthnResponseClientDataJSON': body.response.clientDataJSON,
+                    'webAuthnType': body.type
+                });
             })
             .catch(err => {
                 result.append("Registration failed: " + err);

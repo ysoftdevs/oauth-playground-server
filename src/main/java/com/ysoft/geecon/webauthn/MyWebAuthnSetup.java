@@ -79,7 +79,7 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
             }
             // returning (or duplicate) user with new credential -> reject,
             // as we do not provide a means to register additional credentials yet
-            return Uni.createFrom().failure(new Throwable("Duplicate user"));
+            return Uni.createFrom().failure(new Throwable("Duplicate user: " + authenticator.getUserName()));
         }
     }
 }
