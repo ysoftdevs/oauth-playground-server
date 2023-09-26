@@ -11,6 +11,11 @@ import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.runtime.util.StringUtil;
+import io.quarkus.security.webauthn.WebAuthnLoginResponse;
+import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
+import io.quarkus.security.webauthn.WebAuthnSecurity;
+import io.vertx.ext.auth.webauthn.Authenticator;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -23,6 +28,27 @@ import java.util.List;
 
 @Path("/auth")
 public class OAuthResource {
+
+    @Inject
+    ClientsRepo clientsRepo;
+
+    @Inject
+    UsersRepo usersRepo;
+    @Inject
+    SessionsRepo sessionsRepo;
+    @Inject
+    UriInfo uriInfo;
+
+    @Inject
+    WebAuthnSecurity webAuthnSecurity;
+
+    @GET
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance get(AuthParams params) {
+        var client = validateClient(params);
+        String sessionId = sessionsRepo.newAuthorizationSession(params, client);
+        return Templates.login(params.getLoginHint(), sessionId, "");
+    }
 
     @POST
     @Produces(MediaType.TEXT_HTML)
@@ -43,21 +69,59 @@ public class OAuthResource {
         }
     }
 
-    @Inject
-    ClientsRepo clientsRepo;
-    @Inject
-    UsersRepo usersRepo;
-    @Inject
-    SessionsRepo sessionsRepo;
-    @Inject
-    UriInfo uriInfo;
-
     @GET
+    @Path("passwordless")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance get(AuthParams params) {
+    public TemplateInstance getPasswordless(AuthParams params) {
         var client = validateClient(params);
         String sessionId = sessionsRepo.newAuthorizationSession(params, client);
-        return Templates.login(params.getLoginHint(), sessionId, "");
+        return Templates.loginPasswordless(params.getLoginHint(), sessionId, "");
+    }
+
+    @POST
+    @Path("passwordless/register")
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public TemplateInstance registerPasswordless(@FormParam("sessionId") String sessionId,
+                                                 @BeanParam WebAuthnRegisterResponse webAuthnResponse,
+                                                 RoutingContext ctx) {
+
+        sessionsRepo.getSession(sessionId).orElseThrow(
+                () -> new OAuthUserVisibleException(ErrorResponse.Error.access_denied, "Invalid session"));
+        // Input validation
+        if (!webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+            return Templates.loginPasswordless("", sessionId, "Invalid request");
+        }
+
+        Authenticator authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx)
+                .await().indefinitely();
+
+        var user = usersRepo.getUser(authenticator.getUserName()).orElseThrow();
+        AuthorizationSession session = sessionsRepo.assignUser(sessionId, user);
+        return Templates.consents(session.user(), session.client(), session.params().getScopes(), sessionId, "");
+    }
+
+    @GET
+    @Path("passwordless/login")
+    @Produces(MediaType.TEXT_HTML)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public TemplateInstance loginPasswordless(@FormParam("sessionId") String sessionId,
+                                              @BeanParam WebAuthnLoginResponse webAuthnResponse,
+                                              RoutingContext ctx) {
+
+        sessionsRepo.getSession(sessionId).orElseThrow(
+                () -> new OAuthUserVisibleException(ErrorResponse.Error.access_denied, "Invalid session"));
+        // Input validation
+        if (!webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+            return Templates.loginPasswordless("", sessionId, "Invalid request");
+        }
+
+        Authenticator authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx)
+                .await().indefinitely();
+
+        var user = usersRepo.getUser(authenticator.getUserName()).orElseThrow();
+        AuthorizationSession session = sessionsRepo.assignUser(sessionId, user);
+        return Templates.consents(session.user(), session.client(), session.params().getScopes(), sessionId, "");
     }
 
     @POST
@@ -211,6 +275,8 @@ public class OAuthResource {
     @CheckedTemplate
     public static class Templates {
         public static native TemplateInstance login(String loginHint, String sessionId, String error);
+
+        public static native TemplateInstance loginPasswordless(String loginHint, String sessionId, String error);
 
         public static native TemplateInstance loginSuccess();
 
