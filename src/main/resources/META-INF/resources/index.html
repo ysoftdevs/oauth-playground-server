@@ -20,48 +20,55 @@
         .code {
             white-space: pre;
         }
+
+        .step {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
 <div class="container">
     <input id="userName" placeholder="User name"/><br/>
-    <button id="login">Login</button>
-    <button id="register">Register</button>
+    <button class="nextBtn" id="login">Login</button>
+    <button class="nextBtn" id="register">Register</button>
 </div>
 
-<div id="trace"></div>
-
-<div class="container step" id="server1">
+<div class="container step" id="server1-request">
     The interaction starts with an AJAX call.
     <div class="code">POST <span id="server1-url"></span>
         <div id="server1-call"></div>
     </div>
-    The server prepares a challenge for the browser to sign.
-    <div class="code" id="server1-response"></div>
+    <button class="nextBtn">Request challenge</button>
 </div>
 
-<div class="container step" id="navigator">
+<div class="container step" id="server1-response">
+    The server prepares a challenge for the browser to sign.
+    <div class="code" id="server1-response-body"></div>
+    <button class="nextBtn">Continue</button>
+</div>
+
+<div class="container step" id="navigator-request">
     The challenge is passed to the browser call:
-    <div class="code" id="navigator-call">navigator.credentials.create(...);</div>
+    <div class="code" id="navigator-call"></div>
+    <button class="nextBtn">Call Webauthn API</button>
+</div>
+
+<div class="container step" id="navigator-response">
     Which responds:
-    <div class="code" id="navigator-response"></div>
+    <div class="code" id="navigator-response-body"></div>
     The <strong>response.clientDataJSON</strong> are base64 encoded:
     <div class="code" id="navigator-clientDataJSON"></div>
-</div>
-
-<div class="container step" id="server2">
-
-    <div class="code" id="server2-call"></div>
+    <button class="nextBtn">Finish the interaction</button>
 </div>
 </div>
 
 <div id="result"></div>
+<div id="trace"></div>
 
 <form action="#" method="POST">
     <input name="sessionId" type="hidden" value="somesessionid">
     <div id="form-generated"></div>
-    <button type="submit">Finish</button>
 </form>
 
 <script type="text/javascript">
@@ -70,30 +77,6 @@
             return atob(str);
         } catch (e) {
             return e + "";
-        }
-    }
-
-    function fillOrHideFormField(id, value) {
-        let el = document.getElementById(id);
-        if (!el) throw "No element #" + id;
-        el.value = value;
-        if (value !== undefined) {
-            el.style.display = "";
-        } else {
-            //el.style.display = "none";
-        }
-    }
-
-    function fillOrHideJsonField(id, value) {
-        $("#" + id).remove();
-        $
-        let el = document.getElementById(id);
-        if (!el) throw "No element #" + id;
-        if (value !== undefined) {
-            el.style.display = "";
-            el.innerHTML = tryDecodeBase64(value);
-        } else {
-            el.style.display = "none";
         }
     }
 
@@ -123,61 +106,69 @@
     }
 
     function continueButton(where, result) {
-        const button = $("<button>Continue</button>").appendTo(where)
-        return new Promise((resolve, reject) => {
-            button.click(() => {
-                resolve(result);
-                $(button).remove();
+        const button = $("button", $(where)).show();
+        if (button.length) {
+            return new Promise((resolve, reject) => {
+                button.click(() => {
+                    resolve(result);
+                    $(button).hide();
+                });
             });
-        });
+        } else {
+            return Promise.resolve(result);
+        }
     }
 
     function traceRegisterRequest(params) {
         $(".step").hide();
-        $("#server1").show();
+        $("#server1-request").show();
         $("#server1-url").html(params.url)
         $("#server1-call").html(JSON.stringify(params.body, null, 2));
-        return continueButton("#server1-call", params);
+        return continueButton("#server1-request", params);
     }
 
     function traceRegisterResponse(params) {
-        $("#server1-response").html(JSON.stringify(params, null, 2));
+        $("#server1-response").show();
+        $("#server1-response-body").html(JSON.stringify(params, null, 2));
         return continueButton("#server1-response", params);
     }
 
     function traceLoginRequest(params) {
         $(".step").hide();
-        $("#server1").show();
+        $("#server1-request").show();
         $("#server1-url").html(params.url)
         $("#server1-call").html(JSON.stringify(params.body, null, 2));
-        return continueButton("#server1-call", params);
+        return continueButton("#server1-request", params);
     }
 
     function traceLoginResponse(params) {
-        $("#server1-response").html(JSON.stringify(params, null, 2));
+        $("#server1-response").show();
+        $("#server1-response-body").html(JSON.stringify(params, null, 2));
         return continueButton("#server1-response", params);
     }
 
     function traceCredentialsCreateRequest(challenge) {
-        $("#navigator").show();
-        //$("#navigator-call").html(JSON.stringify(challenge, null, 2));
-        return continueButton("#navigator-call", challenge);
+        $("#navigator-request").show();
+        $("#navigator-call").html("navigator.credentials.create({ publicKey: ... });");
+        return continueButton("#navigator-request", challenge);
     }
 
     function traceCredentialsCreateResponse(response) {
-        $("#navigator-response").html(JSON.stringify(response, null, 2));
+        $("#navigator-response").show();
+        $("#navigator-response-body").html(JSON.stringify(response, null, 2));
         $("#navigator-clientDataJSON").html(JSON.stringify(JSON.parse(tryDecodeBase64(response.response.clientDataJSON)), null, 2));
         return continueButton("#navigator-response", response);
     }
 
     function traceCredentialsGetRequest(challenge) {
-        $("#navigator").show();
-        //$("#navigator-call").html(JSON.stringify(challenge, null, 2));
-        return continueButton("#navigator-call", challenge);
+        $("#navigator-request").show();
+        $("#navigator-call").html("navigator.credentials.get({ publicKey: ... });");
+        return continueButton("#navigator-request", challenge);
     }
 
     function traceCredentialsGetResponse(response) {
-        $("#navigator-response").html(JSON.stringify(response, null, 2));
+        $("#navigator-response").show();
+        $("#navigator-response-body").html(JSON.stringify(response, null, 2));
         $("#navigator-clientDataJSON").html(JSON.stringify(JSON.parse(tryDecodeBase64(response.response.clientDataJSON)), null, 2));
         return continueButton("#navigator-response", response);
     }
@@ -185,13 +176,7 @@
     function traceGeneric(stage, params) {
         const content = JSON.stringify(params);
         const trace = $("<div class='container'></div>").attr("id", stage).html(content).appendTo("#trace");
-        const button = $("<button>Continue</button>").appendTo(trace)
-        return new Promise((resolve, reject) => {
-            button.click(() => {
-                resolve(params);
-                $(button).remove();
-            });
-        });
+        return continueButton(trace, params);
     }
 
     function form(action, fields) {
@@ -201,6 +186,7 @@
             console.log(key);
             $("<input type='hidden'>").attr("name", key).val(value).appendTo($fields)
         }
+        $form.submit();
     }
 
     const webAuthn = new WebAuthn({
