@@ -112,9 +112,23 @@
             return Promise.resolve(params);
         };
 
-        this._debugFetch = function (stage, input, init) {
-            return this.debuggingFunction(stage + "-request", {input: input, init: init})
-                .then(params => fetch(params.input, params.init))
+        this._debugPostJson = function (stage, url, body) {
+            return this.debuggingFunction(stage + "-request", {url: url, body: body})
+                .then(params => fetch(params.url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params.body)
+                }))
+                .then(res => {
+                    if (res.status >= 200 && res.status < 300) {
+                        return res;
+                    }
+                    throw new Error(res.statusText);
+                })
+                .then(res => res.json())
                 .then(resp => this.debuggingFunction(stage + "-response", resp));
         }
 
@@ -134,21 +148,7 @@
         if (!self.registerPath) {
             return Promise.reject('Register path missing form the initial configuration!');
         }
-        return self._debugFetch("register", self.registerPath, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(user || {})
-        })
-            .then(res => {
-                if (res.status === 200) {
-                    return res;
-                }
-                throw new Error(res.statusText);
-            })
-            .then(res => res.json())
+        return self._debugPostJson("register", self.registerPath, user || {})
             .then(res => {
                 res.challenge = base64ToBuffer(res.challenge);
                 res.user.id = base64ToBuffer(res.user.id);
@@ -159,8 +159,7 @@
                 }
                 return res;
             })
-            .then(res => self._debugAround("credentials-create", x => navigator.credentials.create(x), {publicKey: res}))
-            .then(credential => {
+            .then(res => self._debugAround("credentials-create", x => navigator.credentials.create(x).then(credential => {
                 return {
                     id: credential.id,
                     rawId: bufferToBase64(credential.rawId),
@@ -170,49 +169,22 @@
                     },
                     type: credential.type
                 };
-            });
+            }), {publicKey: res}));
+
     };
 
     WebAuthn.prototype.register = function (user) {
         const self = this;
         return self.registerOnly(user)
             .then(body => {
-                return self._debugFetch("register-callback", self.registerCallbackPath, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                })
-            })
-            .then(res => {
-                if (res.status >= 200 && res.status < 300) {
-                    return res;
-                }
-                throw new Error(res.statusText);
+                return self._debugPostJson("register-callback", self.registerCallbackPath, body)
             });
     };
 
     WebAuthn.prototype.login = function (user) {
         const self = this;
         return self.loginOnly(user)
-            .then(body => {
-                return self._debugFetch("login-callback", self.loginCallbackPath, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body),
-                })
-            })
-            .then(res => {
-                if (res.status >= 200 && res.status < 300) {
-                    return res;
-                }
-                throw new Error(res.statusText);
-            });
+            .then(body => self._debugPostJson("login-callback", self.loginCallbackPath, body))
     };
 
     WebAuthn.prototype.loginOnly = function (user) {
@@ -220,21 +192,7 @@
         if (!self.loginPath) {
             return Promise.reject('Login path missing from the initial configuration!');
         }
-        return self._debugFetch("login", self.loginPath, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(user)
-        })
-            .then(res => {
-                if (res.status === 200) {
-                    return res;
-                }
-                throw new Error(res.statusText);
-            })
-            .then(res => res.json())
+        return self._debugPostJson("login", self.loginPath, user)
             .then(res => {
                 res.challenge = base64ToBuffer(res.challenge);
                 if (res.allowCredentials) {
@@ -244,8 +202,7 @@
                 }
                 return res;
             })
-            .then(res => self._debugAround("credentials-get", x => navigator.credentials.get(x), {publicKey: res}))
-            .then(credential => {
+            .then(res => self._debugAround("credentials-get", x => navigator.credentials.get(x).then(credential => {
                 return {
                     id: credential.id,
                     rawId: bufferToBase64(credential.rawId),
@@ -257,7 +214,8 @@
                     },
                     type: credential.type
                 };
-            })
+            }), {publicKey: res}))
+
     };
 
     return WebAuthn;
