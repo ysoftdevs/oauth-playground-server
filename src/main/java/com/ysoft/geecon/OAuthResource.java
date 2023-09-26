@@ -14,6 +14,7 @@ import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
+import io.smallrye.common.annotation.Blocking;
 import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.inject.Inject;
@@ -38,7 +39,6 @@ public class OAuthResource {
     SessionsRepo sessionsRepo;
     @Inject
     UriInfo uriInfo;
-
     @Inject
     WebAuthnSecurity webAuthnSecurity;
 
@@ -72,6 +72,7 @@ public class OAuthResource {
     @GET
     @Path("passwordless")
     @Produces(MediaType.TEXT_HTML)
+    @Blocking
     public TemplateInstance getPasswordless(AuthParams params) {
         var client = validateClient(params);
         String sessionId = sessionsRepo.newAuthorizationSession(params, client);
@@ -82,6 +83,7 @@ public class OAuthResource {
     @Path("passwordless/register")
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Blocking
     public TemplateInstance registerPasswordless(@FormParam("sessionId") String sessionId,
                                                  @BeanParam WebAuthnRegisterResponse webAuthnResponse,
                                                  RoutingContext ctx) {
@@ -105,6 +107,7 @@ public class OAuthResource {
     @Path("passwordless/login")
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Blocking
     public TemplateInstance loginPasswordless(@FormParam("sessionId") String sessionId,
                                               @BeanParam WebAuthnLoginResponse webAuthnResponse,
                                               RoutingContext ctx) {
