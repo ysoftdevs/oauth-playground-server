@@ -126,7 +126,9 @@
                     if (res.status >= 200 && res.status < 300) {
                         return res;
                     }
-                    throw new Error(res.statusText);
+                    return res.text().then(body => {
+                        throw new Error(body);
+                    });
                 })
                 .then(res => res.json())
                 .then(resp => this.debuggingFunction(stage + "-response", resp));

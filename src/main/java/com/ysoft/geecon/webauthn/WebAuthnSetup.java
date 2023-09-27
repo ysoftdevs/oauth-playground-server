@@ -1,28 +1,35 @@
 package com.ysoft.geecon.webauthn;
 
 import com.ysoft.geecon.dto.User;
+import com.ysoft.geecon.error.OAuthApiException;
 import com.ysoft.geecon.repo.UsersRepo;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.Json;
 import io.vertx.ext.auth.webauthn.AttestationCertificates;
 import io.vertx.ext.auth.webauthn.Authenticator;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
-public class MyWebAuthnSetup implements WebAuthnUserProvider {
-    public static final String AUTHORIZED_USER = MyWebAuthnSetup.class.getPackageName() + "#AUTHORIZED_USER";
+public class WebAuthnSetup implements WebAuthnUserProvider {
     @Inject
     UsersRepo usersRepo;
 
-    @Inject
-    RoutingContext routingContext;
-
     private static List<Authenticator> toAuthenticators(List<WebAuthnCredential> dbs) {
-        return dbs.stream().map(MyWebAuthnSetup::toAuthenticator).toList();
+        return dbs.stream().map(WebAuthnSetup::toAuthenticator).toList();
+    }
+
+    private static Uni<List<Authenticator>> loadCredentials(Optional<User> user) {
+        var authenticators = user.map(u -> toAuthenticators(u.credentials())).filter(l -> !l.isEmpty());
+        return Uni.createFrom().item(authenticators.orElse(List.of()));
     }
 
     private static Authenticator toAuthenticator(WebAuthnCredential credential) {
@@ -41,20 +48,30 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
         return ret;
     }
 
+    public void init(@Observes StartupEvent e, Router router) {
+        router.route("/q/webauthn/*").failureHandler((RoutingContext context) -> {
+            if (context.failure() instanceof OAuthApiException exception) {
+                context.response()
+                        .setStatusMessage("Forbidden")
+                        .setStatusCode(403)
+                        .end(Json.encodePrettily(exception.getResponse().getEntity()));
+            } else {
+                context.response()
+                        .setStatusMessage("Internal Error")
+                        .setStatusCode(500)
+                        .end(context.failure().getMessage());
+            }
+        });
+    }
+
     @Override
     public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userName) {
-        return Uni.createFrom().item(usersRepo.getUser(userName)
-                .map((User dbs) -> toAuthenticators(dbs.credentials()))
-                .orElse(List.of())
-        );
+        return loadCredentials(usersRepo.getUser(userName));
     }
 
     @Override
     public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credID) {
-        return Uni.createFrom().item(usersRepo.findByCredID(credID)
-                .map((User dbs) -> toAuthenticators(dbs.credentials()))
-                .orElse(List.of())
-        );
+        return loadCredentials(usersRepo.findByCredID(credID));
     }
 
     @Override
