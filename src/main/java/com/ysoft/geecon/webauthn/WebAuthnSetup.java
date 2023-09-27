@@ -88,7 +88,7 @@ public class WebAuthnSetup implements WebAuthnUserProvider {
             return Uni.createFrom().nullItem();
         } else if (existingUser.isEmpty()) {
             // new user -> register
-            usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential)));
+            usersRepo.register(new User(authenticator.getUserName(), credential));
             return Uni.createFrom().nullItem();
         } else {
             // in production, we should not add a new credentials to an existing user

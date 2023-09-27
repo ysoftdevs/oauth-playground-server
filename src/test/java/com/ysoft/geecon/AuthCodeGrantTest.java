@@ -37,7 +37,7 @@ public class AuthCodeGrantTest {
     @BeforeEach
     void beforeAll() {
         clientsRepo.register(CLIENT);
-        usersRepo.register(new User("bob", "password", List.of()));
+        usersRepo.register(new User("bob", "password"));
     }
 
     @Test

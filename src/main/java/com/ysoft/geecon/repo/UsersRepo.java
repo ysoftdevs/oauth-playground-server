@@ -4,7 +4,6 @@ import com.ysoft.geecon.dto.User;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,7 +32,7 @@ public class UsersRepo {
 
     public final void reset() {
         users.clear();
-        register(new User("bob", "Password1", List.of()));
-        register(new User("user", "user", List.of()));
+        register(new User("bob", "Password1"));
+        register(new User("user", "user"));
     }
 }

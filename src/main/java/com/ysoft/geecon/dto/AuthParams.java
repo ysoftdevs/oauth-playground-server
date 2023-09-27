@@ -14,7 +14,14 @@ public class AuthParams {
 
     public boolean validateResponseType() {
         try {
-            return !getResponseTypes().isEmpty();
+            List<ResponseType> responseTypes = getResponseTypes();
+            if (responseTypes.isEmpty()) {
+                return false;
+            }
+            if (responseTypes.contains(ResponseType.id_token)) {
+                return getScopes().contains("openid");
+            }
+            return true;
         } catch (IllegalArgumentException exception) {
             return false;
         }

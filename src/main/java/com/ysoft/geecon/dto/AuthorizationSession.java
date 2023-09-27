@@ -1,6 +1,9 @@
 package com.ysoft.geecon.dto;
 
 import com.ysoft.geecon.repo.SecureRandomStrings;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
+import org.eclipse.microprofile.jwt.Claims;
 
 import java.util.List;
 import java.util.Objects;
@@ -24,19 +27,36 @@ public record AuthorizationSession(String sessionId,
     }
 
     public AuthorizationSession withGeneratedTokens() {
-        String idToken = null;
         var tokens = new AccessTokenResponse("Bearer",
-                8400,
+                expiresIn(),
                 SecureRandomStrings.alphanumeric(50),
                 scope(),
                 SecureRandomStrings.alphanumeric(50),
-                idToken
+                acceptedScopes.contains("openid") ? idToken() : null
         );
         return new AuthorizationSession(sessionId, params, client, user, acceptedScopes, tokens);
     }
 
+    private int expiresIn() {
+        return 8400;
+    }
+
     public String scope() {
         return acceptedScopes == null ? null : String.join(" ", acceptedScopes);
+    }
+
+    private String idToken() {
+        JwtClaimsBuilder jwt = Jwt.claims()
+                .issuedAt(System.currentTimeMillis() / 1000)
+                .expiresAt(System.currentTimeMillis() / 1000 + expiresIn())
+                .subject(user().id())
+                .audience(client().clientId())
+                .preferredUserName(user().login());
+
+        if (params().nonce != null)
+            jwt.claim(Claims.nonce, params().nonce);
+
+        return jwt.sign();
     }
 
     public boolean validateCodeChallenge(String codeVerifier) {
