@@ -31,6 +31,6 @@ jobs:
     - name: Stop service
       run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl stop OAuthServer"
     - name: Deploy with rsync
-      run: rsync -avz /target/oauth-playground-server-1.0.0-SNAPSHOT-runner.jar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/oauth-online-server
+      run: rsync -avz target/oauth-playground-server-1.0.0-SNAPSHOT-runner.jar ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/oauth-online-server
     - name: Start service
       run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "systemctl start OAuthServer"
