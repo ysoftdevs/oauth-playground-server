@@ -47,6 +47,7 @@ public record AuthorizationSession(String sessionId,
 
     private String idToken() {
         JwtClaimsBuilder jwt = Jwt.claims()
+                .issuer("https://sso.oauth-playground.online")
                 .issuedAt(System.currentTimeMillis() / 1000)
                 .expiresAt(System.currentTimeMillis() / 1000 + expiresIn())
                 .subject(user().id())
