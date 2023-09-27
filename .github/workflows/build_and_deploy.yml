@@ -3,8 +3,11 @@ name: Build & Deploy
 on:
   workflow_dispatch:
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    environment: 
+      name: oauth-playground.online
+      url: https://sso.oauth-playground.online
     steps:
     - uses: actions/checkout@v4
     - name: Setup Java JDK
@@ -14,13 +17,6 @@ jobs:
         java-version: '20'
     - name: Build project
       run: ./mvnw install
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: 
-      name: oauth-playground.online
-      url: https://sso.oauth-playground.online
-    steps:
     - name: Install SSH Key
       uses: shimataro/ssh-key-action@v2
       with:
