@@ -103,7 +103,7 @@ public class OAuthResource {
         return Templates.consents(session.user(), session.client(), session.params().getScopes(), sessionId, "");
     }
 
-    @GET
+    @POST
     @Path("passwordless/login")
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
