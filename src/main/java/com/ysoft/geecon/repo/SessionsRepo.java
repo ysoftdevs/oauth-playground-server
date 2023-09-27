@@ -63,4 +63,10 @@ public class SessionsRepo {
         var sessionId = Optional.ofNullable(sessionsByAuthorizationCode.get(authorizationCode));
         return sessionId.map(authorizationSessions::get);
     }
+
+    public final void reset() {
+        authorizationSessions.clear();
+        sessionsByUserCode.clear();
+        sessionsByAuthorizationCode.clear();
+    }
 }

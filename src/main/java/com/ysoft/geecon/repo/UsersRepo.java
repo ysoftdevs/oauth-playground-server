@@ -13,8 +13,7 @@ public class UsersRepo {
     private final Map<String, User> users = new HashMap<>();
 
     public UsersRepo() {
-        register(new User("bob", "Password1", List.of()));
-        register(new User("user", "user", List.of()));
+        reset();
     }
 
     public Optional<User> getUser(String username) {
@@ -30,5 +29,11 @@ public class UsersRepo {
         return users.values().stream()
                 .filter(u -> u.credentials().stream().anyMatch(c -> c.credID.equals(credID)))
                 .findAny();
+    }
+
+    public final void reset() {
+        users.clear();
+        register(new User("bob", "Password1", List.of()));
+        register(new User("user", "user", List.of()));
     }
 }
