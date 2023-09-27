@@ -59,7 +59,7 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
     @Override
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        WebAuthnCredential credential1 = new WebAuthnCredential(authenticator);
+        WebAuthnCredential credential = new WebAuthnCredential(authenticator);
 
         var existingUser = usersRepo.getUser(authenticator.getUserName());
         var existingCredential = existingUser.stream().flatMap(u -> u.credentials().stream())
@@ -67,19 +67,21 @@ public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
         if (existingUser.isPresent() && existingCredential.isPresent()) {
             // returning user and credential -> update counter
-            usersRepo.register(existingUser.get().withAddedCredential(existingCredential.get()));
+            usersRepo.register(existingUser.get().withAddedCredential(credential));
             return Uni.createFrom().nullItem();
         } else if (existingUser.isEmpty()) {
             // new user -> register
-            usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential1)));
+            usersRepo.register(new User(authenticator.getUserName(), null, List.of(credential)));
             return Uni.createFrom().nullItem();
         } else {
-            if (routingContext.get(AUTHORIZED_USER) != null) {
-                return Uni.createFrom().nullItem();
-            }
-            // returning (or duplicate) user with new credential -> reject,
-            // as we do not provide a means to register additional credentials yet
-            return Uni.createFrom().failure(new Throwable("Duplicate user: " + authenticator.getUserName()));
+            // in production, we should not add a new credentials to an existing user
+            // unless we have another means of verifying their identity
+            // return Uni.createFrom().failure(new Throwable("Duplicate user: " + authenticator.getUserName()));
+
+            // But, for this demo, this is exactly what we are doing.
+            // Just let anyone register a credential in anyone's name
+            usersRepo.register(existingUser.get().withAddedCredential(credential));
+            return Uni.createFrom().nullItem();
         }
     }
 }
