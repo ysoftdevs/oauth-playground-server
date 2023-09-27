@@ -80,6 +80,16 @@ public class OAuthResource {
     }
 
     @POST
+    @Path("passwordless")
+    @Produces(MediaType.TEXT_HTML)
+    @Blocking
+    public TemplateInstance postPasswordless(@FormParam("sessionId") String sessionId) {
+        AuthorizationSession session = sessionsRepo.getSession(sessionId).orElseThrow(
+                () -> new OAuthUserVisibleException(ErrorResponse.Error.access_denied, "Invalid session"));
+        return Templates.loginPasswordless(session.params().getLoginHint(), sessionId, "");
+    }
+
+    @POST
     @Path("passwordless/register")
     @Produces(MediaType.TEXT_HTML)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
