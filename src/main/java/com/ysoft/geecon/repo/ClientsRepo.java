@@ -20,9 +20,13 @@ public class ClientsRepo {
                 List.of("https://oauthdebugger.com/debug")));
 
         register(new OAuthClient("oauth-playground", "OAuth playground", null,
-                List.of("https://oauth-playground.online/flow/code-2", "https://oauth-playground.online/flow/pkce-3")));
+                List.of("https://oauth-playground.online/flow/code-2",
+                        "https://oauth-playground.online/flow/pkce-3",
+                        "https://oauth-playground.online/flow/webauthn-2")));
         register(new OAuthClient("oauth-playground-localhost", "OAuth playground", null,
-                List.of("http://localhost:5555/flow/code-2", "http://localhost:5555/flow/pkce-3")));
+                List.of("http://localhost:5555/flow/code-2",
+                        "http://localhost:5555/flow/pkce-3",
+                        "http://localhost:5555/flow/webauthn-2")));
     }
 
     public Optional<OAuthClient> getClient(String clientId) {
