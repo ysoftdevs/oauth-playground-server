@@ -22,11 +22,17 @@ public class ClientsRepo {
         register(new OAuthClient("oauth-playground", "OAuth playground", null,
                 List.of("https://oauth-playground.online/flow/code-2",
                         "https://oauth-playground.online/flow/pkce-3",
-                        "https://oauth-playground.online/flow/webauthn-2")));
+                        "https://oauth-playground.online/flow/implicit-2",
+                        "https://oauth-playground.online/flow/webauthn-2",
+                        "https://oauth-playground.online/flow/evil"
+                )));
         register(new OAuthClient("oauth-playground-localhost", "OAuth playground", null,
                 List.of("http://localhost:5555/flow/code-2",
                         "http://localhost:5555/flow/pkce-3",
-                        "http://localhost:5555/flow/webauthn-2")));
+                        "http://localhost:5555/flow/implicit-2",
+                        "http://localhost:5555/flow/webauthn-2",
+                        "http://localhost:5555/flow/evil"
+                )));
     }
 
     public Optional<OAuthClient> getClient(String clientId) {
