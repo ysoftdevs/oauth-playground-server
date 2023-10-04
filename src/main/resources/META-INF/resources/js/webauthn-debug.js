@@ -220,5 +220,7 @@
 
     };
 
+    WebAuthn.base64ToBuffer = base64ToBuffer;
+
     return WebAuthn;
 }));
