@@ -10,7 +10,6 @@ import com.ysoft.geecon.repo.SessionsRepo;
 import com.ysoft.geecon.repo.UsersRepo;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
@@ -153,9 +152,11 @@ public class OAuthResource {
             var responseTypes = session.params().getResponseTypes();
 
             UriBuilder uri = UriBuilder.fromUri(redirectUri)
-                    .fragment("")
-                    .queryParam("state", session.params().getState());
+                    .fragment("");
 
+            if (StringUtils.isNotBlank(session.params().getState())) {
+                uri.queryParam("state", session.params().getState());
+            }
             if (responseTypes.contains(AuthParams.ResponseType.code)) {
                 uri.queryParam("code", sessionsRepo.generateAuthorizationCode(sessionId));
             }
@@ -263,9 +264,10 @@ public class OAuthResource {
             // must NOT redirect to invalid redirect URI
             throw new OAuthUserVisibleException(ErrorResponse.Error.invalid_request, "Invalid redirect URI");
         }
-        if (StringUtil.isNullOrEmpty(params.getState())) {
-            throw new OAuthRedirectException(params, ErrorResponse.Error.invalid_request, "Missing state");
-        }
+        // state is optional
+//        if (StringUtil.isNullOrEmpty(params.getState())) {
+//            throw new OAuthRedirectException(params, ErrorResponse.Error.invalid_request, "Missing state");
+//        }
         if (!params.validateResponseType()) {
             throw new OAuthRedirectException(params, ErrorResponse.Error.unsupported_response_type,
                     "Unsupported response type");

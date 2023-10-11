@@ -60,6 +60,26 @@ public class AuthCodeGrantTest {
     }
 
     @Test
+    public void authCodeGrant_stateIsOptional() throws IOException {
+        AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
+                .state(null)
+                .scope("scope1 scope2");
+        LoginScreen loginScreen = flow.start().expectLogin();
+
+        ConsentScreen consentScreen = loginScreen.submit("bob", "password").expectSuccess();
+        assertThat(consentScreen.getScopes(), is(List.of("scope1", "scope2")));
+
+        Document submit = consentScreen.submit();
+        flow.expectSuccessfulRedirect(submit.connection().response());
+
+        assertThat(flow.getCode(), is(notNullValue()));
+        assertThat(flow.getAccessToken(), is(nullValue()));
+        AccessTokenResponse accessTokenResponse = flow.exchangeCode().expectTokens();
+
+        assertThat(accessTokenResponse.accessToken(), is(notNullValue()));
+    }
+
+    @Test
     public void badCredentials() throws IOException {
         AuthorizationCodeFlow flow = new AuthorizationCodeFlow(authUrl, CLIENT)
                 .scope("scope1 scope2");

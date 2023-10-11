@@ -37,7 +37,11 @@ public class AuthorizationCodeFlow {
         query = new HashMap<>();
         query.put("client_id", client.clientId());
         query.put("redirect_uri", client.redirectUris().get(0));
-        query.put("state", state);
+    }
+
+    public AuthorizationCodeFlow state(String state) {
+        this.state = state;
+        return this;
     }
 
     public AuthorizationCodeFlow param(String key, String value) {
@@ -46,6 +50,10 @@ public class AuthorizationCodeFlow {
     }
 
     public Result start() throws IOException {
+        if (state != null) {
+            query.put("state", state);
+        }
+
         Document document = Jsoup.connect(authUrl)
                 .followRedirects(false)
                 .data(query)
