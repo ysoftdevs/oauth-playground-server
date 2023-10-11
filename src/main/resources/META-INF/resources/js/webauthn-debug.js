@@ -221,6 +221,7 @@
     };
 
     WebAuthn.base64ToBuffer = base64ToBuffer;
+    WebAuthn.bufferToBase64 = bufferToBase64;
 
     return WebAuthn;
 }));
