@@ -31,12 +31,22 @@
                                 </button>
                             </div>
                         </div>
+                        <h6>Predefined accounts:</h6>
+                        <ul class="collection">
+                            <li class="collection-item">
+                                <button class="link-button secret-link"
+                                        onclick="this.form.username.value='bob'; this.form.password.value='Password1'; return false;">
+                                    bob / Password1
+                                </button>
+                            </li>
+                            <li class="collection-item">
+                                <button class="link-button secret-link"
+                                        onclick="this.form.username.value='user'; this.form.password.value='user'; return false;">
+                                    user / user
+                                </button>
+                            </li>
+                        </ul>
                     </form>
-                    <h6>Predefined accounts:</h6>
-                    <ul class="collection">
-                        <li class="collection-item">bob / Password1</li>
-                        <li class="collection-item">user / user</li>
-                    </ul>
     <form action="/auth/passwordless" method="post" class="right-align">
     <input type="hidden" name="sessionId" value="{sessionId}">
     <small>Pst, you can try

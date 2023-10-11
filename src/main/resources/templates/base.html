@@ -40,13 +40,18 @@
             background-color: #0056b3
         }
 
-        .link-button {
+        .link-button, .link-button:focus {
             background: none;
             border: none;
             color: #1a0dab;
             text-decoration: underline;
             cursor: pointer;
             padding: 0;
+        }
+
+        .secret-link, .secret-link:focus {
+            text-decoration: none;
+            color: inherit;
         }
 
         .collection {
