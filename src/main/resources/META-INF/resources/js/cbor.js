@@ -414,7 +414,8 @@
 
         var ret = decodeItem();
         if (offset !== data.byteLength)
-            throw "Remaining bytes";
+            console.warn("Remaining bytes")
+        //throw "Remaining bytes";
         return ret;
     }
 
