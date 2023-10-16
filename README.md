@@ -11,7 +11,6 @@ to illustrate and explain basics of OAuth grants and Passkeys (WebAuthN).
 See it in action: https://www.oauth-playground.online
 
 > [!WARNING]
-> Critical content demanding immediate user attention due to potential risks.
 > Disclaimer: This is a demo. It is not to be used in production. It contains security vulnerabilities, some of them on
 > purpose.
 >
