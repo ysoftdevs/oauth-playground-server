@@ -5,8 +5,7 @@
 Welcome to OAuth Playground Server source repo.
 
 Together with [ysoftdevs/oauth-playground-client](https://github.com/ysoftdevs/oauth-playground-client), these two
-projects were designed
-to illustrate and explain basics of OAuth grants and Passkeys (WebAuthN).
+projects illustrate and explain basics of OAuth grants and Passkeys (WebAuthN).
 
 See it in action: https://www.oauth-playground.online
 
@@ -17,7 +16,7 @@ See it in action: https://www.oauth-playground.online
 > If you are thinking about integrating OAuth into your project, have a look
 > at [existing libraries](https://oauth.net/code/).
 > If you insist you have to write it yourself, then familiarize yourself
-> with [the OAith 2.1 RFC](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-09) and make sure you understand
+> with [the OAuth 2.1 RFC](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-09) and make sure you understand
 > the risks.
 
 ## How to build and run locally
