@@ -9,6 +9,7 @@ public record OAuthClient(String clientId, String description, String clientSecr
     }
 
     public boolean validateSecret(String clientSecret) {
-        return Objects.equals(clientSecret, this.clientSecret);
+        // WARN: For open clients we purposefully accept any secrets
+        return this.clientSecret == null || Objects.equals(clientSecret, this.clientSecret);
     }
 }
